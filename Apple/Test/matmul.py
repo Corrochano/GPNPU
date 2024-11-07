@@ -18,7 +18,6 @@ limitations under the License.
 import torch
 from torch import nn
 import coremltools as ct
-from sklearn.metrics import r2_score
 
 class MyMachine(nn.Module):
     def __init__(self):
