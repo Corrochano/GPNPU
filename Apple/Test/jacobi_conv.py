@@ -27,46 +27,45 @@ import torch.nn.functional as F
 class JacobiMachine(nn.Module):
     def __init__(self, nt=100):
         super(JacobiMachine, self).__init__()
-        self.nt = nt 
+        self.nt = torch.tensor(nt)
 
     def forward(self, X, Y):    
-      x = torch.exp(torch.mul(-50, torch.add(torch.pow((X - 0.5), 2), torch.pow((Y - 0.5), 2)))) # Run into ANE
-      
-      
+      x = torch.exp(torch.mul(-50, torch.add(torch.pow((X - 0.5), 2), torch.pow((Y - 0.5), 2))))
+      x = x.unsqueeze(0).unsqueeze(0) # Channel and batch size. Necessary for conv layer
       x_prev = x.clone()
+    
+      # Define the 3x3 kernel
+      kernel = torch.tensor([[0.0, 0.25, 0.0],
+                            [0.25, 0.0, 0.25],
+                            [0.0, 0.25, 0.0]], dtype=torch.float32).view(1, 1, 3, 3)
 
-      for t in range(self.nt):
+      mask = torch.ones_like(x)
+      mask[:, :, 0, :] = 0        # Top boundary
+      mask[:, :, -1, :] = 0       # Bottom boundary
+      mask[:, :, :, 0] = 0        # Left boundary
+      mask[:, :, :, -1] = 0       # Right boundary
+
+      i = torch.tensor(0)
+      
+      while torch.ne(i, self.nt): # The for add can't go to the ane
           x_prev = x.clone()
-          
-          x_next = x.clone()
-          x_next[1:-1, 1:-1] = torch.mul(
-              0.25,
-              torch.add(
-                  torch.add(x_prev[1:-1, 2:], x_prev[1:-1, :-2]),
-                  torch.add(x_prev[2:, 1:-1], x_prev[:-2, 1:-1])
-              )
-          )
-          
-          mask = torch.ones_like(x_next)
-          mask[:, 0] = 0
-          mask[:, -1] = 0
-          mask[0, :] = 0
-          mask[-1, :] = 0
-          
-          x_next *= mask
-          
-          x = x_next.clone()
-          
+
+          x_next = F.conv2d(x_prev, kernel, padding=1) 
+                    
+          x = x_next * mask
+
           # Check for convergence: max difference between u and u_prev
           diff = torch.max(torch.abs(x - x_prev))
           
+          i = torch.add(i, 1)
+      
       return x
 
 jacobiModel = JacobiMachine()
 jacobiModel.eval()
 
-nx=200
-ny=200
+nx=1000
+ny=1000
 dt=0.001
 alpha=0.01 
 
@@ -90,6 +89,9 @@ print("--------------------------")
 print("Exporting the model...")
 print("--------------------------\n")
 
+print("X shape:", X.shape)
+print("Y shape:", Y.shape)
+
 # Export from trace
 traced_model = torch.jit.trace(jacobiModel, (X, Y))
 jacobi_from_trace = ct.convert(
@@ -105,20 +107,23 @@ jacobi_from_trace = ct.convert(
 print("--------------------------")
 print("Saving the model...")
 print("--------------------------\n")
-jacobi_from_trace.save("jacobi.mlpackage")
+jacobi_from_trace.save("conv_jacobi_WhileComplete.mlpackage")
 
 print("--------------------------")
 print("Loading the model...")
 print("--------------------------\n")
-mlmodel = ct.models.MLModel("jacobi.mlpackage", compute_units=ct.ComputeUnit.CPU_AND_NE)
+mlmodel = ct.models.MLModel("conv_jacobi.mlpackage", compute_units=ct.ComputeUnit.CPU_AND_NE)
+
+print("--------------------------")
+print("Model input description:")
+print("--------------------------\n")
+print(mlmodel.get_spec().description.input)
 
 print("--------------------------")
 print("Testing the model...")
 print("--------------------------\n")
-while True:
-    input_dict = {'X': X, 'Y': Y} # If I write capital letters, there's an error
+input_dict = {'X': X, 'Y': Y} # If I write capital letters, there's an error 
 
-#while True:
 result = mlmodel.predict(input_dict)
 
 print("+++ OK +++")
