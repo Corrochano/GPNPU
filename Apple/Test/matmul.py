@@ -36,7 +36,7 @@ print("Creating matrix...")
 print("--------------------------\n")
 example_A = torch.rand(1000, 512, dtype=torch.float64)
 example_B = torch.rand(512, 1000, dtype=torch.float64) 
-
+'''
 print("--------------------------")
 print("Testing the model:")
 output = model(example_A, example_B)
@@ -45,6 +45,7 @@ print("--------------------------\n")
 print("--------------------------")
 print("Exporting the model...")
 print("--------------------------\n")
+
 # Export from trace
 traced_model = torch.jit.trace(model, (example_A, example_B))
 model_from_trace = ct.convert(
@@ -60,7 +61,7 @@ print("--------------------------")
 print("Saving the model...")
 print("--------------------------\n")
 model_from_trace.save("newmodel_from_export.mlpackage")
-
+'''
 
 print("--------------------------")
 print("Loading the model...")
@@ -70,9 +71,9 @@ mlmodel = ct.models.MLModel("newmodel_from_export.mlpackage", compute_units=ct.C
 print("--------------------------")
 print("Testing the model...")
 print("--------------------------\n")
-input_dict = {'A': example_A, 'B': example_B} # If I write capital letters, there's an error 
-
 while True:
+    input_dict = {'A': example_A, 'B': example_B} # If I write capital letters, there's an error
+
     result = mlmodel.predict(input_dict)
 
 print("+++ OK +++")

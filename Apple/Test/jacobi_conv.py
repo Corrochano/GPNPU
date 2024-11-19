@@ -25,7 +25,7 @@ import numpy as np
 import torch.nn.functional as F
 
 class JacobiMachine(nn.Module):
-    def __init__(self, nt=100):
+    def __init__(self, nt=1000):
         super(JacobiMachine, self).__init__()
         self.nt = torch.tensor(nt)
 
@@ -33,24 +33,32 @@ class JacobiMachine(nn.Module):
       x = torch.exp(torch.mul(-50, torch.add(torch.pow((X - 0.5), 2), torch.pow((Y - 0.5), 2))))
       x = x.unsqueeze(0).unsqueeze(0) # Channel and batch size. Necessary for conv layer
       x_prev = x.clone()
-    
-      # Define the 3x3 kernel
-      kernel = torch.tensor([[0.0, 0.25, 0.0],
-                            [0.25, 0.0, 0.25],
-                            [0.0, 0.25, 0.0]], dtype=torch.float32).view(1, 1, 3, 3)
-
+      
       mask = torch.ones_like(x)
       mask[:, :, 0, :] = 0        # Top boundary
       mask[:, :, -1, :] = 0       # Bottom boundary
       mask[:, :, :, 0] = 0        # Left boundary
-      mask[:, :, :, -1] = 0       # Right boundary
-
+      mask[:, :, :, -1] = 0       # Right boundary      
+    
+      
+      # Define the 3x3 kernel
+      kernel = torch.tensor([[0.0, 0.25, 0.0],
+                            [0.25, 0.0, 0.25],
+                            [0.0, 0.25, 0.0]], dtype=torch.float32).view(1, 1, 3, 3)
+      '''
+      # Define a full 3x3 kernel
+      kernel = torch.ones(3, 3, dtype=torch.float32) / 9
+      kernel = kernel.view(1, 1, 3, 3)
+      '''
       i = torch.tensor(0)
       
       while torch.ne(i, self.nt): # The for add can't go to the ane
           x_prev = x.clone()
 
           x_next = F.conv2d(x_prev, kernel, padding=1) 
+          #smoothed = F.conv2d(x_prev, kernel, padding=1)
+          #central_contrib = x_prev * (4 / 9) 
+          #x_next = smoothed - central_contrib
                     
           x = x_next * mask
 
@@ -79,7 +87,7 @@ X, Y = torch.meshgrid(x, y)
 X = X.float()
 Y = Y.float()
 '''
-
+'''
 print("--------------------------")
 print("Testing the model:")
 output = jacobiModel(X, Y)
@@ -99,7 +107,6 @@ jacobi_from_trace = ct.convert(
     inputs=[ct.TensorType(shape=X.shape, dtype=np.float32), ct.TensorType(shape=Y.shape, dtype=np.float32)],
 )
 
-
 # Export from program
 #exported_jacobi = torch.export.export(jacobiModel, (X, Y))
 #jacobi_from_export = ct.convert(exported_jacobi, compute_units=ct.ComputeUnit.CPU_AND_NE)
@@ -107,12 +114,12 @@ jacobi_from_trace = ct.convert(
 print("--------------------------")
 print("Saving the model...")
 print("--------------------------\n")
-jacobi_from_trace.save("conv_jacobi_WhileComplete.mlpackage")
-
+jacobi_from_trace.save("conv_jacobi_WhileComplete_1000iters.mlpackage")
+'''
 print("--------------------------")
 print("Loading the model...")
 print("--------------------------\n")
-mlmodel = ct.models.MLModel("conv_jacobi.mlpackage", compute_units=ct.ComputeUnit.CPU_AND_NE)
+mlmodel = ct.models.MLModel("conv_jacobi_WhileComplete_1000iters.mlpackage", compute_units=ct.ComputeUnit.CPU_AND_NE)
 
 print("--------------------------")
 print("Model input description:")
@@ -122,9 +129,9 @@ print(mlmodel.get_spec().description.input)
 print("--------------------------")
 print("Testing the model...")
 print("--------------------------\n")
-input_dict = {'X': X, 'Y': Y} # If I write capital letters, there's an error 
-
-result = mlmodel.predict(input_dict)
+while True:
+    input_dict = {'X': X, 'Y': Y} # If I write capital letters, there's an error
+    result = mlmodel.predict(input_dict)
 
 print("+++ OK +++")
 
