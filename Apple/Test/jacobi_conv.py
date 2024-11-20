@@ -18,6 +18,7 @@ limitations under the License.
 
 # To use asitop: sudo /Users/acorrochano/bin/pythonOld/bin/python3 -m asitop.asitop
 
+import argparse
 import torch
 from torch import nn
 import coremltools as ct
@@ -69,69 +70,105 @@ class JacobiMachine(nn.Module):
       
       return x
 
-jacobiModel = JacobiMachine()
-jacobiModel.eval()
+def main(grid_size, iterations, dataType):
 
-nx=1000
-ny=1000
-dt=0.001
-alpha=0.01 
+    nt = iterations
+    datatype = dataType
 
-dx, dy = 1.0 / (nx - 1), 1.0 / (ny - 1)  # spatial step sizes
+    if datatype == "fp64":
+       torchfloat = torch.float64
+       npfloat = np.float64
+    elif datatype == "fp32":
+       torchfloat = torch.float32
+       npfloat = np.float32
+    elif datatype == "fp16":
+       torchfloat = torch.float16
+       npfloat = np.float16
+    else:
+       print('Error datatype not available!!!!')
 
-x = torch.linspace(0, 1, nx, dtype=torch.float32)
-y = torch.linspace(0, 1, ny, dtype=torch.float32)
-X, Y = torch.meshgrid(x, y)
+    jacobiModel = JacobiMachine(nt)
+    jacobiModel.eval()
 
-'''
-X = X.float()
-Y = Y.float()
-'''
-'''
-print("--------------------------")
-print("Testing the model:")
-output = jacobiModel(X, Y)
-print("--------------------------\n")
+    nx=grid_size
+    ny=grid_size
+    dt=0.001
+    alpha=0.01 
 
-print("--------------------------")
-print("Exporting the model...")
-print("--------------------------\n")
+    dx, dy = 1.0 / (nx - 1), 1.0 / (ny - 1)  # spatial step sizes
 
-print("X shape:", X.shape)
-print("Y shape:", Y.shape)
+    x = torch.linspace(0, 1, nx, dtype=torchfloat)
+    y = torch.linspace(0, 1, ny, dtype=torchfloat)
+    X, Y = torch.meshgrid(x, y)
 
-# Export from trace
-traced_model = torch.jit.trace(jacobiModel, (X, Y))
-jacobi_from_trace = ct.convert(
-    traced_model,
-    inputs=[ct.TensorType(shape=X.shape, dtype=np.float32), ct.TensorType(shape=Y.shape, dtype=np.float32)],
-)
+    '''
+    X = X.float()
+    Y = Y.float()
+    '''
 
-# Export from program
-#exported_jacobi = torch.export.export(jacobiModel, (X, Y))
-#jacobi_from_export = ct.convert(exported_jacobi, compute_units=ct.ComputeUnit.CPU_AND_NE)
+    print("--------------------------")
+    print("Testing the model:")
+    output = jacobiModel(X, Y)
+    print("--------------------------\n")
 
-print("--------------------------")
-print("Saving the model...")
-print("--------------------------\n")
-jacobi_from_trace.save("conv_jacobi_WhileComplete_1000iters.mlpackage")
-'''
-print("--------------------------")
-print("Loading the model...")
-print("--------------------------\n")
-mlmodel = ct.models.MLModel("conv_jacobi_WhileComplete_1000iters.mlpackage", compute_units=ct.ComputeUnit.CPU_AND_NE)
+    print("--------------------------")
+    print("Exporting the model...")
+    print("--------------------------\n")
 
-print("--------------------------")
-print("Model input description:")
-print("--------------------------\n")
-print(mlmodel.get_spec().description.input)
+    print("X shape:", X.shape)
+    print("Y shape:", Y.shape)
 
-print("--------------------------")
-print("Testing the model...")
-print("--------------------------\n")
-while True:
+    # Export from trace
+    traced_model = torch.jit.trace(jacobiModel, (X, Y))
+    jacobi_from_trace = ct.convert(
+        traced_model,
+        inputs=[ct.TensorType(shape=X.shape, dtype=npfloat), ct.TensorType(shape=Y.shape, dtype=npfloat)],
+    )
+
+    # Export from program
+    #exported_jacobi = torch.export.export(jacobiModel, (X, Y))
+    #jacobi_from_export = ct.convert(exported_jacobi, compute_units=ct.ComputeUnit.CPU_AND_NE)
+
+    print("--------------------------")
+    print("Saving the model...")
+    print("--------------------------\n")
+    jacobi_from_trace.save(f"jacobi{nx//1000}k_model_{datatype}_{nt}.mlpackage")
+
+    print("--------------------------")
+    print("Loading the model...")
+    print("--------------------------\n")
+    mlmodel = ct.models.MLModel(f"jacobi{nx//1000}k_model_{datatype}_{nt}.mlpackage", compute_units=ct.ComputeUnit.CPU_AND_NE)
+
+    print("--------------------------")
+    print("Model input description:")
+    print("--------------------------\n")
+    print(mlmodel.get_spec().description.input)
+
+    print("--------------------------")
+    print("Testing the model...")
+    print("--------------------------\n")
     input_dict = {'X': X, 'Y': Y} # If I write capital letters, there's an error
     result = mlmodel.predict(input_dict)
 
-print("+++ OK +++")
+    print("+++ OK +++")
+    
+if __name__ == "__main__":
+    # Create the parser
+    parser = argparse.ArgumentParser(description="python script.py grid_size number_of_iterations datatype.")
+    
+    # Add arguments
+    parser.add_argument("grid_input", type=int, help="grids size in integer")
+    parser.add_argument("iteration_input", type=int, help="Number of iterations on the jacobi")
+    parser.add_argument("datatype_input", type=str, help="datatype: fp32/fp16")
+    
+    # Parse the arguments
+    args = parser.parse_args()
+
+    # Check if the arguments are correct (not necessary here as argparse will handle type checks)
+    if args.grid_input	 is None or args.iteration_input is None or args.datatype_input is None:
+        print("Error: You must provide all the arguments.")
+        parser.print_usage()  # Shows the usage message
+    else:
+        # Call the main function with provided arguments
+        main(args.grid_input, args.iteration_input, args.datatype_input)    
 
