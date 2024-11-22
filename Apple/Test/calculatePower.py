@@ -13,51 +13,85 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-
+import os
+import argparse
 import matplotlib.pyplot as plt
 
 
-def graphics(values):
+def graphics(values, device, size, precision, mode, folder_path):
     # Create x and y axis
-    x = range(len(values))
+    x = list(range(len(values)))
+    x = list(map(lambda i: i * 100, x))
     y = values
-    
-    # Adjust size
-    plt.figure(figsize=(500, 500))
     
     # Generate graphic
     plt.plot(x, y)
-    
-    plt.yticks([0, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 11000, 12000, 13000, 14000, 15000, 16000, 17000, 18000])
 
     # Title and labels
-    plt.title('Energy consumption')
-    plt.xlabel('Time (s)')
+    plt.title(f'{size} {device} Energy consumption with {precision} executed with {mode}')
+    plt.xlabel('Time (ms)')
     plt.ylabel('Consumption (mW)')
 
     #plt.legend()
-    plt.savefig('cpu.png')
-    #plt.show()
+    plt.savefig(os.path.join(folder_path, f'{size}_{device}_{precision}_mode{mode}.png'))
     plt.clf()
 
-f = open('metrics.txt')
+if __name__ == "__main__":
+    # Create the parser
+    parser = argparse.ArgumentParser(description="python3 calculatePower.py file size")
 
-text = f.read()
+    # Add arguments
+    parser.add_argument("file_input", type=str, help="File with the data to process")
+    parser.add_argument("size_input", type=str, help="Size of the Jacobi's grid")
+    parser.add_argument("precision_input", type=str, help="Precision of the model (fp32/fp16)")
+    parser.add_argument("mode_input", type=str, help="Execution mode (CPU/GPU/ANE)")
+    
+    # Parse the arguments
+    args = parser.parse_args()
+    
+    # Check if the arguments are correct (not necessary here as argparse will handle type checks)
+    if args.file_input is None or args.size_input is None or args.precision_input is None or args.mode_input is None:
+        print("Error: You must provide all the arguments.")
+        parser.print_usage()  # Shows the usage message
+    else:        
+        
+        # Read the specified file
+        f = open(args.file_input)
 
-lines = text.split('System instructions per clock:')
+        text = f.read()
 
-f.close()
+        lines = text.split('System instructions per clock:')
 
-cpu_power = []
-gpu_power = []
-ane_power = []
+        f.close()
+        
+        # Save each device data
+        cpu_power = []
+        gpu_power = []
+        ane_power = []
 
-for i, line in enumerate(lines):
-    if i != 0:
-        cpu_power.append(line.split('\n')[1].split(' ')[2])
-        gpu_power.append(line.split('\n')[2].split(' ')[2])
-        ane_power.append(line.split('\n')[3].split(' ')[2])
+        for i, line in enumerate(lines):
+            if i != 0:
+                cpu_power.append(int(line.split('\n')[1].split(' ')[2]))
+                gpu_power.append(int(line.split('\n')[2].split(' ')[2]))
+                ane_power.append(int(line.split('\n')[3].split(' ')[2]))
+                
+       
+        # Save all the graphics
+        first_path = os.path.join(os.getcwd(), f"jacobi")
+        second_path = os.path.join(first_path, f"{args.size_input}")
+        third_path = os.path.join(second_path, f"{args.precision_input}")
+        folder_path = os.path.join(third_path, f"{args.mode_input}")
 
-graphics(cpu_power)
-
-
+        if not os.path.isdir(first_path):
+                os.mkdir(first_path)
+        if not os.path.isdir(second_path):
+                os.mkdir(second_path)
+        if not os.path.isdir(third_path):
+                os.mkdir(third_path)
+        if not os.path.isdir(folder_path):
+                os.mkdir(folder_path)
+        
+        graphics(cpu_power, "CPU", args.size_input, args.precision_input, args.mode_input, folder_path)
+        graphics(gpu_power, "GPU", args.size_input, args.precision_input, args.mode_input, folder_path)
+        graphics(ane_power, "ANE", args.size_input, args.precision_input, args.mode_input, folder_path)
+        
