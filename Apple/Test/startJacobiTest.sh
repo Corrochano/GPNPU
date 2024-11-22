@@ -14,19 +14,33 @@
 #See the License for the specific language governing permissions and
 #limitations under the License.
 
+# Use example: sudo ./startJacobiTest.sh metrics.txt 1 100 1 fp32 ane
+
+if [ $# -lt 6 ]; then
+    echo "Usage: $0 <param1> <param2> <param3> <param4> <param5> <param6>"
+    exit 1
+fi
+
+file_name=$1
+size=$2
+iters=$3
+number_exec=$4
+precision=$5
+mode=$6
+
 echo "powermetrics"
 sudo rm -f metrics.txt
-sudo powermetrics -i 100 --samplers cpu_power -a --hide-cpu-duty-cycle --show-usage-summary --show-extra-power-info --show-process-energy > metrics.txt &
+sudo powermetrics -i 100 --samplers cpu_power -a --hide-cpu-duty-cycle --show-usage-summary --show-extra-power-info --show-process-energy > $file_name &
 POWERMETRICS_PID=$!
 
 echo " Running the jacobi model..."
 # Test to launch (exec)
-/Users/acorrochano/bin/pyenv/bin/python3 run_jacobi.py 1 100 1 fp32 ane
+/Users/acorrochano/bin/pyenv/bin/python3 run_jacobi.py $size $iters $iters $precision $mode
 
 echo " Model done to run!"
 kill $POWERMETRICS_PID
 
 echo " Saving metrics..."
-/Users/acorrochano/bin/pyenv/bin/python3 calculatePower.py metrics.txt 1000 fp32 ane
+/Users/acorrochano/bin/pyenv/bin/python3 calculatePower.py $file_name ${size}000 $precision $mode
 echo " Done!"
 
