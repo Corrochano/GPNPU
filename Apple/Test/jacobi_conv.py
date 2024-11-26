@@ -26,12 +26,16 @@ import numpy as np
 import torch.nn.functional as F
 
 class JacobiMachine(nn.Module):
-    def __init__(self, nt=1000):
+    def __init__(self, nt=1000, datatype=torch.float32):
         super(JacobiMachine, self).__init__()
-        self.nt = torch.tensor(nt)
+        self.datatype=datatype
+        self.nt = torch.tensor(nt, dtype=self.datatype)
 
     def forward(self, X, Y):    
-      x = torch.exp(torch.mul(-50, torch.add(torch.pow((X - 0.5), 2), torch.pow((Y - 0.5), 2))))
+      x = torch.exp(torch.mul( # If I cast everything, there are still operations on INT32 idk why and the performance and consume increase a lot
+                        -50, 
+                        torch.add(torch.pow((X - 0.5), 2), torch.pow((Y - 0.5), 2))
+                    ))
       x = x.unsqueeze(0).unsqueeze(0) # Channel and batch size. Necessary for conv layer
       x_prev = x.clone()
       
@@ -45,21 +49,14 @@ class JacobiMachine(nn.Module):
       # Define the 3x3 kernel
       kernel = torch.tensor([[0.0, 0.25, 0.0],
                             [0.25, 0.0, 0.25],
-                            [0.0, 0.25, 0.0]], dtype=torch.float32).view(1, 1, 3, 3)
-      '''
-      # Define a full 3x3 kernel
-      kernel = torch.ones(3, 3, dtype=torch.float32) / 9
-      kernel = kernel.view(1, 1, 3, 3)
-      '''
-      i = torch.tensor(0)
+                            [0.0, 0.25, 0.0]], dtype=self.datatype).view(1, 1, 3, 3)
+                            
+      i = torch.tensor(0, dtype=self.datatype)
       
-      while torch.ne(i, self.nt): # The for add can't go to the ane
+      while torch.ne(i, self.nt):
           x_prev = x.clone()
 
-          x_next = F.conv2d(x_prev, kernel, padding=1) 
-          #smoothed = F.conv2d(x_prev, kernel, padding=1)
-          #central_contrib = x_prev * (4 / 9) 
-          #x_next = smoothed - central_contrib
+          x_next = F.conv2d(x_prev, kernel, padding=1)
                     
           x = x_next * mask
 
@@ -75,20 +72,27 @@ def main(grid_size, iterations, dataType):
     nt = iterations
     datatype = dataType
 
-    if datatype == "fp64":
-       torchfloat = torch.float64
-       npfloat = np.float64
-    elif datatype == "fp32":
+    if datatype == "fp32":
        torchfloat = torch.float32
        npfloat = np.float32
+       ctfloat = ct.precision.FLOAT32
     elif datatype == "fp16":
        torchfloat = torch.float16
        npfloat = np.float16
+       ctfloat = ct.precision.FLOAT16
     else:
        print('Error datatype not available!!!!')
 
-    jacobiModel = JacobiMachine(nt)
+    ''' # fp64 not in core tools, only fp32, 16 and integer
+    if datatype == "fp64":
+       torchfloat = torch.float64
+       npfloat = np.float64
+       ctfloat = ct.precision.FLOAT64
+    '''
+
+    jacobiModel = JacobiMachine(nt,torchfloat)
     jacobiModel.eval()
+    jacobiModel.float()
 
     nx=grid_size
     ny=grid_size
@@ -123,6 +127,9 @@ def main(grid_size, iterations, dataType):
     jacobi_from_trace = ct.convert(
         traced_model,
         inputs=[ct.TensorType(shape=X.shape, dtype=npfloat), ct.TensorType(shape=Y.shape, dtype=npfloat)],
+        outputs=[ct.TensorType(dtype=npfloat)],
+        minimum_deployment_target=ct.target.macOS13,
+        compute_precision=ctfloat
     )
 
     # Export from program
@@ -147,7 +154,7 @@ def main(grid_size, iterations, dataType):
     print("--------------------------")
     print("Testing the model...")
     print("--------------------------\n")
-    input_dict = {'X': X, 'Y': Y} # If I write capital letters, there's an error
+    input_dict = {'X': X, 'Y': Y}
     result = mlmodel.predict(input_dict)
 
     print("+++ OK +++")

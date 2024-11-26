@@ -53,8 +53,7 @@ if __name__ == "__main__":
     if args.file_input is None or args.size_input is None or args.precision_input is None or args.mode_input is None:
         print("Error: You must provide all the arguments.")
         parser.print_usage()  # Shows the usage message
-    else:        
-        
+    else:
         # Read the specified file
         f = open(args.file_input)
 

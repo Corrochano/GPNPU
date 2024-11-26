@@ -85,7 +85,7 @@ def main(size, runtimes, datatype, device, iterations):
    
    gflops = flops / (10**9)  # Convert to GFLOPs
    gflops_per_second = gflops / elapsed_time 
-   print(f"Jacobi of size {grid_size}x{grid_size} in {datatype} took {elapsed_time:.4f} seconds.")
+   print(f"Jacobi of size {grid_size}x{grid_size} with {iterations} iterations in {datatype} took {elapsed_time:.4f} seconds.")
    print(f"Performance: {gflops_per_second:.2f} GFLOPs/s")
 
    # Inspect the Core ML model to view input and output names
@@ -105,10 +105,10 @@ if __name__ == "__main__":
 
     # Add arguments
     parser.add_argument("float_input", type=float, help="grids size in float")
+    parser.add_argument("iteration_input", type=int, help="Number of iterations on the jacobi")
     parser.add_argument("int_input", type=int, help="number of times executed")
     parser.add_argument("datatype_input", type=str, help="datatype: fp32/fp16")
     parser.add_argument("device_input", type=str, help="device: cpu/gpu/ane")
-    parser.add_argument("iteration_input", type=int, help="Number of iterations on the jacobi")
 
     # Parse the arguments
     args = parser.parse_args()
