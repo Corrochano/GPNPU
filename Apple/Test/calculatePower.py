@@ -24,6 +24,8 @@ def graphics(values, device, size, precision, mode, folder_path):
     x = list(map(lambda i: i * 100, x))
     y = values
     
+    plt.figure(figsize=(45,33))
+    
     # Generate graphic
     plt.plot(x, y)
 
@@ -33,7 +35,7 @@ def graphics(values, device, size, precision, mode, folder_path):
     plt.ylabel('Consumption (mW)')
 
     #plt.legend()
-    plt.savefig(os.path.join(folder_path, f'{size}_{device}_{precision}_mode{mode}.png'))
+    plt.savefig(os.path.join(folder_path, f'{size}_{device}_{precision}_mode{mode}.svg'))
     plt.clf()
 
 if __name__ == "__main__":

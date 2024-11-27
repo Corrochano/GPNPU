@@ -28,17 +28,19 @@ number_exec=$4
 precision=$5
 mode=$6
 
+echo " Running the warmup..."
+/Users/acorrochano/bin/pyenv/bin/python3 warmup.py $mode
+
 echo "powermetrics"
 sudo rm -f metrics.txt
 sudo powermetrics -i 100 --samplers cpu_power -a --hide-cpu-duty-cycle --show-usage-summary --show-extra-power-info --show-process-energy > $file_name &
-POWERMETRICS_PID=$!
 
 echo " Running the jacobi model..."
 # Test to launch (exec)
 /Users/acorrochano/bin/pyenv/bin/python3 run_jacobi.py $size $iters $iters $precision $mode
 
 echo " Model done to run!"
-kill $POWERMETRICS_PID
+sudo pkill -9 powermetrics
 
 echo " Saving metrics..."
 /Users/acorrochano/bin/pyenv/bin/python3 calculatePower.py $file_name ${size}000 $precision $mode

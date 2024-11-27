@@ -55,12 +55,11 @@ def main(size, runtimes, datatype, device, iterations):
       print('Error device not found: cpu/gpu/ane')
 
    print("[INFO] Creating input grid...")
-
    # Create random input grid
    x = torch.linspace(0, 1, grid_size, dtype=npfloat)
    y = torch.linspace(0, 1, grid_size, dtype=npfloat)
    X, Y = torch.meshgrid(x, y)
-
+   
    # Prepare inputs for the model
    input_dict = {'X': X, 'Y': Y}
 
@@ -85,9 +84,10 @@ def main(size, runtimes, datatype, device, iterations):
    
    gflops = flops / (10**9)  # Convert to GFLOPs
    gflops_per_second = gflops / elapsed_time 
+   print("****************************************************************************************************************************")
    print(f"Jacobi of size {grid_size}x{grid_size} with {iterations} iterations in {datatype} took {elapsed_time:.4f} seconds.")
    print(f"Performance: {gflops_per_second:.2f} GFLOPs/s")
-
+   print("****************************************************************************************************************************")
    # Inspect the Core ML model to view input and output names
 #   print("Model Inputs:", mlmodel.input_description)
 #   print("Model Outputs:", mlmodel.output_description)
@@ -108,7 +108,7 @@ if __name__ == "__main__":
     parser.add_argument("iteration_input", type=int, help="Number of iterations on the jacobi")
     parser.add_argument("int_input", type=int, help="number of times executed")
     parser.add_argument("datatype_input", type=str, help="datatype: fp32/fp16")
-    parser.add_argument("device_input", type=str, help="device: cpu/gpu/ane")
+    parser.add_argument("device_input", type=str, help="device: cpu/gpu/ane/all")
 
     # Parse the arguments
     args = parser.parse_args()
