@@ -20,7 +20,7 @@ import numpy as np
 import coremltools as ct
 import time
 
-def main(size, runtimes, datatype, device, iterations):
+def main(size, runtimes, datatype, device):
    
    # Load the Core ML model
    if size.is_integer():
@@ -32,11 +32,11 @@ def main(size, runtimes, datatype, device, iterations):
       matrix_size = int(size)
 
    if datatype == "fp64":
-      npfloat = torch.float64
+      torchfloat = torch.float64
    elif datatype == "fp32":
-      npfloat = torch.float32
+      torchfloat = torch.float32
    elif datatype == "fp16":
-      npfloat = torch.float16
+      torchfloat = torch.float16
    else:
       print('Error datatype not available!!!!')
 

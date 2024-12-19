@@ -36,7 +36,7 @@ sudo powermetrics -i 100 --samplers cpu_power -a --hide-cpu-duty-cycle --show-us
 
 echo " Running the jacobi model..."
 # Test to launch (exec)
-/Users/acorrochano/bin/pyenv/bin/python3 run_matmul.py $size $iters $precision $mode
+/Users/acorrochano/bin/pyenv/bin/python3 run_matmul.py $size $number_exec $precision $mode
 
 echo " Model done to run!"
 sudo pkill -9 powermetrics
