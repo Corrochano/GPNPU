@@ -21,23 +21,27 @@ import coremltools as ct
 def main(device):
     print("[INFO] Warming up...")
 
-    print("[INFO] Creating input matrix...")
-    warmup_A = torch.rand(1000, 512, dtype=torch.float16)
-    warmup_B = torch.rand(512, 1000, dtype=torch.float16) 
-    warmup_dict = {'A': warmup_A, 'B': warmup_B}
+    print("[INFO] Creating input grid...")
+    # Create random input grid
+    x = torch.linspace(0, 1, 1000, dtype=torch.float16)
+    y = torch.linspace(0, 1, 1000, dtype=torch.float16)
+    X, Y = torch.meshgrid(x, y)
+
+    # Prepare inputs for the model
+    warmup_dict = {'X': X, 'Y': Y}
 
     print("[INFO] Loading warmup model...")
     if device == "ane":
-        wu_model = ct.models.MLModel('matmulfp16.mlpackage', compute_units=ct.ComputeUnit.CPU_AND_NE)
+        wu_model = ct.models.MLModel('jacobi1k_model_fp16_100.mlpackage', compute_units=ct.ComputeUnit.CPU_AND_NE)
     elif device == "gpu":
-        wu_model = ct.models.MLModel('matmulfp16.mlpackage', compute_units=ct.ComputeUnit.CPU_AND_GPU)
+        wu_model = ct.models.MLModel('jacobi1k_model_fp16_100.mlpackage', compute_units=ct.ComputeUnit.CPU_AND_GPU)
     elif device == "cpu":
-        wu_model = ct.models.MLModel('matmulfp16.mlpackage', compute_units=ct.ComputeUnit.CPU_ONLY)
+        wu_model = ct.models.MLModel('jacobi1k_model_fp16_100.mlpackage', compute_units=ct.ComputeUnit.CPU_ONLY)
     elif device == "all":
-        wu_model = ct.models.MLModel('matmulfp16.mlpackage', compute_units=ct.ComputeUnit.ALL)
+        wu_model = ct.models.MLModel('jacobi1k_model_fp16_100.mlpackage', compute_units=ct.ComputeUnit.ALL)
 
     print("[INFO] Running warmup...")
-    for i in range(1000):
+    for i in range(100):
         wu_model.predict(warmup_dict)
 
     print("+++ Warmup Done +++")
