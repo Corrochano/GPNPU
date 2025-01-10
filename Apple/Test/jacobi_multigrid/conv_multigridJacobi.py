@@ -26,26 +26,28 @@ import numpy as np
 import torch.nn.functional as F
 
 class JacobiMachine(nn.Module):
-    def __init__(self, nt=1000, datatype=torch.float32):
+    def __init__(self, nt=1000, num_levels=9, datatype=torch.float32):
         super(JacobiMachine, self).__init__()
         self.datatype=datatype
+        self.num_levels = num_levels
         self.nt = torch.tensor(nt, dtype=self.datatype)
 
-    def forward(self, X, Y):    
-      x = torch.exp(torch.mul( # If I cast everything, there are still operations on INT32 idk why and the performance and consume increase a lot
-                        -50, 
-                        torch.add(torch.pow((X - 0.5), 2), torch.pow((Y - 0.5), 2))
-                    ))
-      x = x.unsqueeze(0).unsqueeze(0) # Channel and batch size. Necessary for conv layer
+    def restriction(self, residual): # Applied when we want to convert from finegrid to coarsergrid
+        return F.avg_pool2d(residual, kernel_size=2)
+    
+    def interpolate(self, f, target_size): # Applied when we want to convert from coarsergrid to finrgrid
+        return F.interpolate(f, size=target_size, mode='bilinear', align_corners=False)
+
+    def jacobi(self, Z): # Jacobi method   
+      x = Z
       x_prev = x.clone()
       
       mask = torch.ones_like(x)
-      mask[:, :, 0, :] = 0        # Top boundary
-      mask[:, :, -1, :] = 0       # Bottom boundary
-      mask[:, :, :, 0] = 0        # Left boundary
-      mask[:, :, :, -1] = 0       # Right boundary      
-    
-      
+      mask[:, :, 0, :] = 0
+      mask[:, :, -1, :] = 0
+      mask[:, :, :, 0] = 0
+      mask[:, :, :, -1] = 0
+
       # Define the 3x3 kernel
       kernel = torch.tensor([[0.0, 0.25, 0.0],
                             [0.25, 0.0, 0.25],
@@ -55,17 +57,62 @@ class JacobiMachine(nn.Module):
       
       while torch.ne(i, self.nt):
           x_prev = x.clone()
-
-          x_next = F.conv2d(x_prev, kernel, padding=1)
-                    
+          x_next = F.conv2d(x_prev, kernel, padding=1)            
           x = x_next * mask
-
-          # Check for convergence: max difference between u and u_prev
-          diff = torch.max(torch.abs(x - x_prev))
           
           i = torch.add(i, 1)
       
       return x
+
+    def forward(self, X, Y):
+        x = torch.exp(torch.mul( # Take the value of X
+                        -50, 
+                        torch.add(torch.pow((X - 0.5), 2), torch.pow((Y - 0.5), 2))
+                    ))
+        x = x.unsqueeze(0).unsqueeze(0) # Channel and batch size. Necessary for conv layer
+
+        mask = torch.ones_like(x)
+        mask[:, :, 0, :] = 0
+        mask[:, :, -1, :] = 0
+        mask[:, :, :, 0] = 0
+        mask[:, :, :, -1] = 0
+
+        # Define the 3x3 kernel
+        kernel = torch.tensor([[0.0, 0.25, 0.0],
+                               [0.25, 0.0, 0.25],
+                               [0.0, 0.25, 0.0]], dtype=self.datatype).view(1, 1, 3, 3)        
+        
+        # Define num_levels
+        num_levels = self.num_levels
+        grids = [x] # To store the solutions
+        current_mask = mask
+        
+        # Downward phase
+        for level in range(num_levels):
+            residual = F.conv2d(grids[-1], kernel, padding=1) * current_mask  # Calculate residual
+            coarse_residual = self.restriction(residual)  # Restrict to coarser grid
+            current_mask = self.restriction(current_mask) # Coarsen the mask
+            grids.append(coarse_residual)  # Store
+
+        # Solve on the coarsest grid
+        coarse_solution = grids[-1]
+        coarse_solution = self.jacobi(coarse_solution)  # Solve the classic jacobi there
+        grids[-1] = coarse_solution  # Update store solution     
+        
+        # Upward phase
+        for level in range(num_levels - 1, -1, -1):
+            target_size = grids[level].shape[-2:]
+            fine_solution = self.interpolate(grids[level + 1], target_size=target_size)  # Interpolate to finer grid
+            fine_solution += grids[level]  # Add correction to finer grid
+            fine_solution = F.conv2d(fine_solution, kernel, padding=1) * current_mask  # Refine
+            grids[level] = fine_solution  # Update storesolution
+
+        # Final refinement on the finest grid
+        final_solution = grids[0]
+        final_solution = self.jacobi(final_solution)  # Final Jacobi iterations
+
+        return final_solution  
+        
 
 def main(grid_size, iterations, dataType):
 
@@ -90,7 +137,7 @@ def main(grid_size, iterations, dataType):
        ctfloat = ct.precision.FLOAT64
     '''
 
-    jacobiModel = JacobiMachine(nt,torchfloat)
+    jacobiModel = JacobiMachine(nt=nt, datatype=torchfloat)
     jacobiModel.eval()
     jacobiModel.float()
 
