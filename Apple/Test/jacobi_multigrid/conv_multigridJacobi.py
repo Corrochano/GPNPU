@@ -68,10 +68,10 @@ class JacobiMachine(nn.Module):
         x = torch.exp(torch.mul( # Take the value of X
                         -50, 
                         torch.add(torch.pow((X - 0.5), 2), torch.pow((Y - 0.5), 2))
-                    ))
+                    )).to(self.datatype)
         x = x.unsqueeze(0).unsqueeze(0) # Channel and batch size. Necessary for conv layer
 
-        mask = torch.ones_like(x)
+        mask = torch.ones_like(x, dtype=self.datatype)
         mask[:, :, 0, :] = 0
         mask[:, :, -1, :] = 0
         mask[:, :, :, 0] = 0
@@ -84,29 +84,69 @@ class JacobiMachine(nn.Module):
         
         # Define num_levels
         num_levels = self.num_levels
-        grids = [x] # To store the solutions
+
+        grid_sizes = [(x.size(-2) // (2 ** i), x.size(-1) // (2 ** i)) for i in range(self.num_levels)]
+        grids = [torch.zeros((1, 1, h, w), dtype=self.datatype, device=x.device) for h, w in grid_sizes]
+
+        grids[0][:, :, :x.size(-2), :x.size(-1)] = x
+        #grids =  [x]# To store the solutions 
+
         current_mask = mask
         
         # Downward phase
-        for level in range(num_levels):
-            residual = F.conv2d(grids[-1], kernel, padding=1) * current_mask  # Calculate residual
+        for level in range(1, num_levels):
+            print(level)
+            residual = F.conv2d(grids[level - 1], kernel, padding=1) * current_mask  # Calculate residual
             coarse_residual = self.restriction(residual)  # Restrict to coarser grid
             current_mask = self.restriction(current_mask) # Coarsen the mask
-            grids.append(coarse_residual)  # Store
+            
+            grids[level][:, :, :coarse_residual.size(-2), :coarse_residual.size(-1)] = coarse_residual       
+            #grids.append(coarse_residual)  # Store
+
 
         # Solve on the coarsest grid
         coarse_solution = grids[-1]
         coarse_solution = self.jacobi(coarse_solution)  # Solve the classic jacobi there
         grids[-1] = coarse_solution  # Update store solution     
-        
+                
         # Upward phase
-        for level in range(num_levels - 1, -1, -1):
-            target_size = grids[level].shape[-2:]
-            fine_solution = self.interpolate(grids[level + 1], target_size=target_size)  # Interpolate to finer grid
-            fine_solution += grids[level]  # Add correction to finer grid
-            fine_solution = F.conv2d(fine_solution, kernel, padding=1) * current_mask  # Refine
-            grids[level] = fine_solution  # Update storesolution
+        for level in range(num_levels - 2, -1, -1):
 
+            target_size = grids[level].shape[-2:]  
+
+            #shape = grids[level].shape  # Get the shape of the array
+            #target_size = (shape[len(shape) - 2], shape[len(shape) - 1])
+          
+            fine_solution = self.interpolate(grids[level + 1], target_size=target_size)  # Interpolate to finer grid
+            
+            current_mask = self.interpolate(current_mask, target_size=target_size)
+                        
+            fine_solution = torch.add( fine_solution, grids[level] ) # += grids[level]  # Add correction to finer grid
+            fine_solution = torch.mul( F.conv2d(fine_solution, kernel, padding=1), current_mask ) # Refine              
+            
+            grids[level][:, :, :fine_solution.size(-2), :fine_solution.size(-1)] = fine_solution
+
+            '''
+            # --- Forth attempt ---
+            temp = []
+            while len(grids) > level + 1:   
+                temp.append(grids.pop())  # Collect elements to restore later
+
+            grids.pop()
+            grids.append(fine_solution)
+
+            while temp: # Restore
+                grids.append(temp.pop())
+            '''
+            # --- First attempt ---
+            #grids.pop(-1)
+            #grids.append(fine_solution)
+            # --- Second attempt ---
+            #grids.pop(level)
+            #grids.insert(level, fine_solution)
+            # --- Third attempt ---
+            #grids[level] = fine_solution  # Update storesolution # PROBLEMATC LINE ON ANE
+            
         # Final refinement on the finest grid
         final_solution = grids[0]
         final_solution = self.jacobi(final_solution)  # Final Jacobi iterations
