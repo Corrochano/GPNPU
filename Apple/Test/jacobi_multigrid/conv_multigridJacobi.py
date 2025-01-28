@@ -105,8 +105,8 @@ class JacobiMachine(nn.Module):
         # Downward phase
         
         for level in range(1, num_levels):
-            masked_input = grids[level - 1] * (masks[level - 1] > 0)
-            unmasked_input = grids[level - 1] * (1 - masks[level - 1])
+            masked_input = torch.mul(grids[level - 1] , (masks[level - 1] > 0))
+            unmasked_input = torch.mul(grids[level - 1] , (1 - masks[level - 1]))
 
             masked_output = F.conv2d(masked_input, kernel, padding=1)
             unmasked_output = F.conv2d(unmasked_input, kernel, padding=1)
@@ -125,7 +125,7 @@ class JacobiMachine(nn.Module):
         coarse_solution = grids[-1]
         coarse_solution = self.jacobi(coarse_solution)  # Solve the classic jacobi there
         grids[-1] = coarse_solution  # Update store solution     
-                
+               
         # Upward phase
         for level in range(num_levels - 2, -1, -1):
 
@@ -138,8 +138,8 @@ class JacobiMachine(nn.Module):
             
             
             
-            masked_input = fine_solution * (masks[level] > 0)
-            unmasked_input = fine_solution * (1 - masks[level])
+            masked_input = torch.mul(fine_solution , (masks[level] > 0))
+            unmasked_input = torch.mul(fine_solution , (1 - masks[level]))
 
             masked_output = F.conv2d(masked_input, kernel, padding=1)
             unmasked_output = F.conv2d(unmasked_input, kernel, padding=1)
@@ -147,7 +147,9 @@ class JacobiMachine(nn.Module):
             fine_solution = masked_output + unmasked_output
             #fine_solution = F.conv2d(fine_solution, kernel, padding=1) * masks[level] # MULTIPLY I SA PROBLEM * current_mask # Refine
             
-            grids[level] = fine_solution
+            grids.append(fine_solution)
+            #grids.append(fine_solution)
+            #grids[level] = fine_solution # Need to be replace with opo append
 
             
             # --- Forth attempt ---
@@ -174,6 +176,9 @@ class JacobiMachine(nn.Module):
             #grids[level] = fine_solution  # Update storesolution # PROBLEMATC LINE ON ANE
             
         # Final refinement on the finest grid
+        
+        while len(grids) > 1:
+            grids.pop()
         
         final_solution = grids.pop()
         final_solution = self.jacobi(final_solution)  # Final Jacobi iterations
