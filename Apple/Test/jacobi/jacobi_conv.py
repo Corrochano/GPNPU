@@ -31,7 +31,8 @@ class JacobiMachine(nn.Module):
         self.datatype=datatype
         self.nt = torch.tensor(nt, dtype=self.datatype)
 
-    def forward(self, X, Y):    
+    def forward(self, X, X_prev, Mask):
+      '''    
       x = torch.exp(torch.mul( # If I cast everything, there are still operations on INT32 idk why and the performance and consume increase a lot
                         -50, 
                         torch.add(torch.pow((X - 0.5), 2), torch.pow((Y - 0.5), 2))
@@ -44,7 +45,11 @@ class JacobiMachine(nn.Module):
       mask[:, :, -1, :] = 0       # Bottom boundary
       mask[:, :, :, 0] = 0        # Left boundary
       mask[:, :, :, -1] = 0       # Right boundary      
-    
+      '''
+      
+      x = X
+      x_prev = X_prev
+      mask = Mask
       
       # Define the 3x3 kernel
       kernel = torch.tensor([[0.0, 0.25, 0.0],
@@ -109,10 +114,27 @@ def main(grid_size, iterations, dataType):
     X = X.float()
     Y = Y.float()
     '''
+    
+    # TRYING TO CREATE THE MASK OUTSIDE JACOBI
+    
+    x = torch.exp(torch.mul( # If I cast everything, there are still operations on INT32 idk why and the performance and consume increase a lot
+                    -50, 
+                    torch.add(torch.pow((X - 0.5), 2), torch.pow((Y - 0.5), 2))
+                ))
+    x = x.unsqueeze(0).unsqueeze(0) # Channel and batch size. Necessary for conv layer
+    x_prev = x.clone()
+
+    mask = torch.ones_like(x)
+    mask[:, :, 0, :] = 0        # Top boundary
+    mask[:, :, -1, :] = 0       # Bottom boundary
+    mask[:, :, :, 0] = 0        # Left boundary
+    mask[:, :, :, -1] = 0       # Right boundary      
+    
+    
 
     print("--------------------------")
     print("Testing the model:")
-    output = jacobiModel(X, Y)
+    output = jacobiModel(x, x_prev, mask)
     print("--------------------------\n")
 
     print("--------------------------")
@@ -123,10 +145,10 @@ def main(grid_size, iterations, dataType):
     print("Y shape:", Y.shape)
 
     # Export from trace
-    traced_model = torch.jit.trace(jacobiModel, (X, Y))
+    traced_model = torch.jit.trace(jacobiModel, (x, x_prev, mask))
     jacobi_from_trace = ct.convert(
         traced_model,
-        inputs=[ct.TensorType(shape=X.shape, dtype=npfloat), ct.TensorType(shape=Y.shape, dtype=npfloat)],
+        inputs=[ct.TensorType(shape=x.shape, dtype=npfloat), ct.TensorType(shape=x_prev.shape, dtype=npfloat), ct.TensorType(shape=mask.shape, dtype=npfloat)],
         outputs=[ct.TensorType(dtype=npfloat)],
         minimum_deployment_target=ct.target.macOS13,
         compute_precision=ctfloat
@@ -141,10 +163,11 @@ def main(grid_size, iterations, dataType):
     print("--------------------------\n")
     jacobi_from_trace.save(f"jacobi{nx//1000}k_model_{datatype}_{nt}.mlpackage")
 
+    '''
     print("--------------------------")
     print("Loading the model...")
     print("--------------------------\n")
-    mlmodel = ct.models.MLModel(f"jacobi{nx//1000}k_model_{datatype}_{nt}.mlpackage", compute_units=ct.ComputeUnit.CPU_AND_NE)
+    mlmodel = ct.models.MLModel(f"jacobi{nx//1000}k_model_{datatype}_{nt}.mlpackage", compute_units=ct.ComputeUnit.ALL)
 
     print("--------------------------")
     print("Model input description:")
@@ -154,14 +177,14 @@ def main(grid_size, iterations, dataType):
     print("--------------------------")
     print("Testing the model...")
     print("--------------------------\n")
-    input_dict = {'X': X, 'Y': Y}
+    input_dict = {'X': x, 'X_prev': x_prev, 'Mask': mask}
     result = mlmodel.predict(input_dict)
-
+    '''
     print("+++ OK +++")
     
 if __name__ == "__main__":
     # Create the parser
-    parser = argparse.ArgumentParser(description="python script.py grid_size number_of_iterations datatype.")
+    parser = argparse.ArgumentParser(description="python jacobi_conv.py grid_size number_of_iterations datatype.")
     
     # Add arguments
     parser.add_argument("grid_input", type=int, help="grids size in integer")
@@ -172,7 +195,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # Check if the arguments are correct (not necessary here as argparse will handle type checks)
-    if args.grid_input	 is None or args.iteration_input is None or args.datatype_input is None:
+    if args.grid_input is None or args.iteration_input is None or args.datatype_input is None:
         print("Error: You must provide all the arguments.")
         parser.print_usage()  # Shows the usage message
     else:

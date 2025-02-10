@@ -60,8 +60,21 @@ def main(size, runtimes, datatype, device, iterations):
    y = torch.linspace(0, 1, grid_size, dtype=npfloat)
    X, Y = torch.meshgrid(x, y)
    
+   x = torch.exp(torch.mul( # If I cast everything, there are still operations on INT32 idk why and the performance and consume increase a lot
+                    -50, 
+                    torch.add(torch.pow((X - 0.5), 2), torch.pow((Y - 0.5), 2))
+                ))
+   x = x.unsqueeze(0).unsqueeze(0) # Channel and batch size. Necessary for conv layer
+   x_prev = x.clone()
+
+   mask = torch.ones_like(x)
+   mask[:, :, 0, :] = 0        # Top boundary
+   mask[:, :, -1, :] = 0       # Bottom boundary
+   mask[:, :, :, 0] = 0        # Left boundary
+   mask[:, :, :, -1] = 0       # Right boundary         
+   
    # Prepare inputs for the model
-   input_dict = {'X': X, 'Y': Y}
+   input_dict = {'X': x, 'X_prev': x_prev, 'Mask': mask}
 
    print("[INFO] Running inference...")
 
