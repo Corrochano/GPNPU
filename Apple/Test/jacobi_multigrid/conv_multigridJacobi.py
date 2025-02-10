@@ -35,7 +35,7 @@ class JacobiMachine(nn.Module):
     def restriction(self, residual): # Applied when we want to convert from finegrid to coarsergrid
         return nn.AvgPool2d(kernel_size=2)(residual)
     
-    def interpolate(self, f, target_size): # Applied when we want to convert from coarsergrid to finrgrid
+    def interpolate(self, f, target_size): # Applied when we want to convert from coarsergrid to finegrid
         return F.interpolate(f, size=target_size, mode='bilinear', align_corners=False)
 
     def jacobi(self, Z): # Jacobi method   
@@ -43,11 +43,12 @@ class JacobiMachine(nn.Module):
       x_prev = x.clone()
       
       mask = torch.ones_like(x)
+      
       mask[:, :, 0, :] = 0
       mask[:, :, -1, :] = 0
       mask[:, :, :, 0] = 0
       mask[:, :, :, -1] = 0
-
+              
       # Define the 3x3 kernel
       kernel = torch.tensor([[0.0, 0.25, 0.0],
                             [0.25, 0.0, 0.25],
@@ -91,19 +92,10 @@ class JacobiMachine(nn.Module):
             masks.append(self.restriction(masks[-1]).to(self.datatype))
         
         grids = [x]
-        
-        '''
-        grid_sizes = [(x.size(-2) // (2 ** i), x.size(-1) // (2 ** i)) for i in range(self.num_levels)]
-        grids = [torch.zeros((1, 1, h, w), dtype=self.datatype, device=x.device) for h, w in grid_sizes]
-
-        grids[0][:, :, :x.size(-2), :x.size(-1)] = x
-        '''
-        #grids =  [x]# To store the solutions 
 
         current_mask = mask
         
         # Downward phase
-        
         for level in range(1, num_levels):
             masked_input = torch.mul(grids[level - 1] , (masks[level - 1] > 0))
             unmasked_input = torch.mul(grids[level - 1] , (1 - masks[level - 1]))
@@ -112,12 +104,8 @@ class JacobiMachine(nn.Module):
             unmasked_output = F.conv2d(unmasked_input, kernel, padding=1)
 
             residual = masked_output + unmasked_output
-            #residual = F.conv2d(grids[level - 1], kernel, padding=1) * masks[level - 1] #MULTIPLY IS A PROBLEM * current_mask
-            
             
             coarse_residual = self.restriction(residual)  # Restrict to coarser grid
-        
-            #current_mask = self.restriction(current_mask) # Coarsen the mask
         
             grids.append(coarse_residual)  # Store
         
@@ -132,11 +120,8 @@ class JacobiMachine(nn.Module):
             target_size = grids[level].shape[-2:]
           
             fine_solution = self.interpolate(grids[level + 1], target_size=target_size)  # Interpolate to finer gridclear
-            #current_mask = self.interpolate(current_mask, target_size=target_size)
                         
-            fine_solution = torch.add( fine_solution, grids[level] ) # += grids[level]  # Add correction to finer grid
-            
-            
+            fine_solution = torch.add( fine_solution, grids[level] ) # += grids[level]  # Add correction to finer grid    
             
             masked_input = torch.mul(fine_solution , (masks[level] > 0))
             unmasked_input = torch.mul(fine_solution , (1 - masks[level]))
@@ -145,38 +130,8 @@ class JacobiMachine(nn.Module):
             unmasked_output = F.conv2d(unmasked_input, kernel, padding=1)
 
             fine_solution = masked_output + unmasked_output
-            #fine_solution = F.conv2d(fine_solution, kernel, padding=1) * masks[level] # MULTIPLY I SA PROBLEM * current_mask # Refine
             
-            grids.append(fine_solution)
-            #grids.append(fine_solution)
-            #grids[level] = fine_solution # Need to be replace with opo append
-
-            
-            # --- Forth attempt ---
-            #temp = []
-            #while len(grids) > level + 1:
-            #    temp.append(grids.pop())  # Collect elements to restore later
-
-            #grids.pop()
-            #grids.append(fine_solution)
-
-            #while temp: # Restore
-            #    grids.append(temp.pop())
-            
-            # --- Second Attempt
-            # grids[level][:, :, :fine_solution.size(-2), :fine_solution.size(-1)] = fine_solution
-            
-            # --- First attempt ---
-            #grids.pop(-1)
-            #grids.append(fine_solution)
-            # --- Second attempt ---
-            #grids.pop(level)
-            #grids.insert(level, fine_solution)
-            # --- Third attempt ---
-            #grids[level] = fine_solution  # Update storesolution # PROBLEMATC LINE ON ANE
-            
-        # Final refinement on the finest grid
-        
+        # Final refinement on the finest grid        
         while len(grids) > 1:
             grids.pop()
         
@@ -185,7 +140,6 @@ class JacobiMachine(nn.Module):
     
         return final_solution
         
-
 def main(grid_size, iterations, dataType):
 
     nt = iterations

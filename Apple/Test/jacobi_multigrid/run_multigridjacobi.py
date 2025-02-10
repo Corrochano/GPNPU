@@ -80,7 +80,8 @@ def main(size, runtimes, datatype, device, iterations):
    elapsed_time = ( end_time - start_time ) / runtimes
 
    # NEED TO ADJUST THE FORMULA
-   # Calculate GFLOPs
+   '''
+   # Calculate GFLOPs for jacobi
    init_flops = 7 * (grid_size ** 2) # Initial operation outside the while
    # While flops
    conv_flops = iterations * (17 * (grid_size ** 2)) # 3x3 convolution has 17 operations
@@ -88,7 +89,24 @@ def main(size, runtimes, datatype, device, iterations):
    diff_flops = 3 * (grid_size ** 2) # max, abs and sub (not sure about the max needs to be into account)
    iAdd_flops = 1 # i++ operation
    
-   flops = init_flops + (iterations * (conv_flops + calculateNext_flops + diff_flops + iAdd_flops)) # total iterations on the while multiplied by all the ops on there
+   jacobiFlops = (init_flops + (iterations * (conv_flops + calculateNext_flops + diff_flops + iAdd_flops))) *  mlmodel.num_levels # total iterations on the while multiplied by all the ops on there
+   '''
+   
+   jacobi_flops = sum(1000 * 17 * (grid_size // (2**l))**2 for l in range(9))
+   
+   restriction_flops = sum((grid_size // (2**l))**2 for l in range(9 - 1))
+   
+   interpolation_flops = sum(4 * (grid_size // (2**l))**2 for l in range(9 - 1))
+   
+   flops = jacobi_flops + restriction_flops + interpolation_flops
+   
+   
+
+   
+   
+   
+   
+   
    
    gflops = flops / (10**9)  # Convert to GFLOPs
    gflops_per_second = gflops / elapsed_time 
