@@ -3,7 +3,7 @@ This repository contains my work with various **neural accelerators** to **evalu
 
 The project primarily focuses on Apple's ANE and Intel NPUs, utilizing an Apple M1, Apple M4 Pro, and an Intel NUC.  
 
-Additionally, this work serves as my **Master's Final Project** for the **Master’s in Computer Engineering at Complutense University of Madrid**.  
+Additionally, this work serves as my **Master's Final Project** for the **Master’s in Computer Engineering at Complutense University of Madrid**. 
 
 <div style="text-align: center;">
   <img src="https://www.ucm.es/data/cont/docs/3-2016-07-21-EscudoUCMTransparenteBig.png?raw=true" alt="UCM Logo" width="250"/>
@@ -32,8 +32,15 @@ Additionally, this work serves as my **Master's Final Project** for the **Master
     * [Copyright Notice](#copyright-notice)
 
 ## Algorithms
+When **GPUs** first entered the market, they **were designed for specific purposes**. However, over time, they have been **increasingly used** in applications like **machine learning**, which they were not originally intended for.  
+
+For this reason, I test various **general-purpose algorithms** to **evaluate** whether **neural accelerators** can achieve **high performance** in fields beyond machine learning.  
+
 
 ### Matrix Multiplication
+Firstly, I test matrix multiplication because is a basic operator that is used frequently on machine learning, so it must be quick to perform on this neuronal accelerators. </br>
+
+Matrix multiplication consists on TODO
 
 ### Jacobi
 
@@ -42,6 +49,9 @@ Additionally, this work serves as my **Master's Final Project** for the **Master
 ## Apple
 
 ### Python Dependencies
+- torch==2.3.0 
+- coremltools==8.0b2 
+- torchvision==0.18.0
 
 ### M1
 
