@@ -38,11 +38,18 @@ For this reason, I test various **general-purpose algorithms** to **evaluate** w
 
 
 ### Matrix Multiplication
-Firstly, I test matrix multiplication because is a basic operator that is used frequently on machine learning, so it must be quick to perform on this neuronal accelerators. </br>
+First, I test matrix multiplication because it is a fundamental operation frequently used in machine learning. As a result, it should be optimized for execution on neural accelerators.  
 
-Matrix multiplication consists on TODO
+Matrix multiplication involves multiplying two matrices of compatible sizes. This means the number of columns in the first matrix must be equal to the number of rows in the second matrix. The resulting matrix will have the same number of rows as the first matrix and the same number of columns as the second matrix. 
+
+```math
+\text{A} * \text{B} = \text{C}
+```
+
+To evaluate performance across different scenarios, matrix multiplication is tested with various matrix sizes such as **100, 1K, 2K, 5K, 7K, 8K, 10K, 15K, or 20K**
 
 ### Jacobi
+The jacobi method is a TODO
 
 ### Multigrid Jacobi
 
