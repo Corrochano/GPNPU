@@ -49,7 +49,32 @@ Matrix multiplication involves multiplying two matrices of compatible sizes. Thi
 To evaluate performance across different scenarios, matrix multiplication is tested with various matrix sizes such as **100, 1K, 2K, 5K, 7K, 8K, 10K, 15K, or 20K**
 
 ### Jacobi
-The jacobi method is a TODO
+The jacobi method is an iterative algorithm which resolve strictly diagonally dominant differential equation systems. </br>
+
+The pseudocode must be describe as:
+
+``` Pseudocode
+k = 0
+while convergence not reached do
+    for i := 1 step until n do
+        σ = 0
+        for j := 1 step until n do
+            if j ≠ i then
+                σ = σ + aij xj(k)
+            end
+        end
+        xi(k+1) = (bi − σ) / aii
+    end
+    increment k
+end
+```
+
+One of the most common uses is resolve the heat equation:
+``` math
+\frac{\partial u}{\partial t} = \left( \frac{\partial^2 u}{\partial x_1^2} + \frac{\partial^2 u}{\partial x_2^2} + \dots + \frac{\partial^2 u}{\partial x_n^2} \right)
+```
+
+I use this approach because... TODO
 
 ### Multigrid Jacobi
 
