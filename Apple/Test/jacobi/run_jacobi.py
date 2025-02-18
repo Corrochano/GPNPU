@@ -29,7 +29,7 @@ def main(size, runtimes, datatype, device, iterations):
 
    else:
       ssize = str(size)
-      grid_size = int(size*1000)
+      grid_size = int(size)
 
    if datatype == "fp64":
       npfloat = torch.float64
@@ -86,14 +86,8 @@ def main(size, runtimes, datatype, device, iterations):
    elapsed_time = ( end_time - start_time ) / runtimes
 
    # Calculate GFLOPs
-   init_flops = 7 * (grid_size ** 2) # Initial operation outside the while
    # While flops
-   conv_flops = iterations * (17 * (grid_size ** 2)) # 3x3 convolution has 17 operations
-   calculateNext_flops = grid_size ** 2 # Only a mul op
-   diff_flops = 3 * (grid_size ** 2) # max, abs and sub (not sure about the max needs to be into account)
-   iAdd_flops = 1 # i++ operation
-   
-   flops = init_flops + (iterations * (conv_flops + calculateNext_flops + diff_flops + iAdd_flops)) # total iterations on the while multiplied by all the ops on there
+   flops = iterations * (10 * (grid_size ** 2)) # 3x3 convolution has 10 operations
    
    gflops = flops / (10**9)  # Convert to GFLOPs
    gflops_per_second = gflops / elapsed_time 

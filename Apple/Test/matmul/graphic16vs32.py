@@ -71,7 +71,14 @@ def read_file(fileName):
             cpu_power.append(int(line.split('\n')[1].split(' ')[2]))
             gpu_power.append(int(line.split('\n')[2].split(' ')[2]))
             ane_power.append(int(line.split('\n')[3].split(' ')[2]))
+            total_power.append(int(line.split('\n')[4].split(' ')[7]))
+            
+    mean = sum(total_power) / len(total_power)
     
+    print("++++++++++++++++++++++++++++++++++++++++++++++++")
+    print("Mean total power on " + fileName + ':', mean )
+    print("++++++++++++++++++++++++++++++++++++++++++++++++")
+        
     return cpu_power, gpu_power, ane_power
 
 if __name__ == "__main__":

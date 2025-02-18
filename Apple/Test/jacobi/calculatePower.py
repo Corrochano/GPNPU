@@ -79,7 +79,7 @@ if __name__ == "__main__":
        
         # Save all the graphics
         first_path = os.path.join(os.getcwd(), f"jacobi")
-        second_path = os.path.join(first_path, f"{args.size_input}")
+        second_path = os.path.join(first_path, f"{args.size_input}000")
         third_path = os.path.join(second_path, f"{args.precision_input}")
         folder_path = os.path.join(third_path, f"{args.mode_input}")
 
