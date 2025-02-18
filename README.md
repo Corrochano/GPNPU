@@ -46,7 +46,7 @@ Matrix multiplication involves multiplying two matrices of compatible sizes. Thi
 \text{A} * \text{B} = \text{C}
 ```
 
-To evaluate performance across different scenarios, matrix multiplication is tested with various matrix sizes such as **100, 1K, 2K, 5K, 7K, 8K, 10K, 15K, or 20K**
+I tested different grid sizes with 100 iterations, including **100×100, 500×500, 1K×1K, 2K×2K, 3K×3K, 5K×5K, 7K×7K, 8K×8K, 10K×10K, 12K×12K, 15K×15K, and 20K×20K**.  
 
 ### Jacobi
 The Jacobi method is an **iterative algorithm** used to solve strictly diagonally dominant differential equation systems. </br> 
@@ -76,7 +76,9 @@ One of the most common applications of the Jacobi method is solving the **heat e
 \frac{\partial u}{\partial t} = \left( \frac{\partial^2 u}{\partial x_1^2} + \frac{\partial^2 u}{\partial x_2^2} + \dots + \frac{\partial^2 u}{\partial x_n^2} \right)
 ```
 
-I chose this equation because of its relevance and to take the challenge to the next level by working with something more complex than before.
+I chose this equation because of its relevance and to take the challenge to the next level by working with something more complex than before. </br>
+
+I tested different grid sizes with 100 iterations, including **100×100, 500×500, 1K×1K, 2K×2K, 3K×3K, 5K×5K, 7K×7K, 8K×8K, 10K×10K, 12K×12K, 15K×15K, and 20K×20K**.  
 
 ### Multigrid Jacobi
 The Multigrid Method is **another algorithm** designed to solve differential equations using a hierarchy of discretizations. It is particularly useful for problems that exhibit multiple scales of behavior. </br>  
