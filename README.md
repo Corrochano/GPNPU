@@ -49,7 +49,9 @@ Matrix multiplication involves multiplying two matrices of compatible sizes. Thi
 To evaluate performance across different scenarios, matrix multiplication is tested with various matrix sizes such as **100, 1K, 2K, 5K, 7K, 8K, 10K, 15K, or 20K**
 
 ### Jacobi
-The jacobi method is an iterative algorithm which resolve strictly diagonally dominant differential equation systems. </br>
+The Jacobi method is an **iterative algorithm** used to solve strictly diagonally dominant differential equation systems. </br> 
+
+The pseudocode can be described as follows:  
 
 The pseudocode must be describe as:
 
@@ -69,14 +71,51 @@ while convergence not reached do
 end
 ```
 
-One of the most common uses is resolve the heat equation:
+One of the most common applications of the Jacobi method is solving the **heat equation**:
 ``` math
 \frac{\partial u}{\partial t} = \left( \frac{\partial^2 u}{\partial x_1^2} + \frac{\partial^2 u}{\partial x_2^2} + \dots + \frac{\partial^2 u}{\partial x_n^2} \right)
 ```
 
-I use this approach because... TODO
+I chose this equation because of its relevance and to take the challenge to the next level by working with something more complex than before.
 
 ### Multigrid Jacobi
+The Multigrid Method is **another algorithm** designed to solve differential equations using a hierarchy of discretizations. It is particularly useful for problems that exhibit multiple scales of behavior. </br>  
+
+There are different approaches to the Multigrid Method, but I use the most common one, known as the **V-Cycle Multigrid**. </br>
+
+Here is the pseudocode for this algorithm: 
+
+``` Pseudocode
+function phi = V_Cycle(phi,f,h)
+    % Recursive V-Cycle Multigrid for solving the Poisson equation (\nabla^2 phi = f) on a uniform grid of spacing h
+
+    % Pre-Smoothing
+    phi = smoothing(phi,f,h);
+
+    % Compute Residual Errors
+    r = residual(phi,f,h);
+
+    % Restriction
+    rhs = restriction(r);
+
+    eps = zeros(size(rhs));
+
+    % stop recursion at smallest grid size, otherwise continue recursion
+    if smallest_grid_size_is_achieved
+        eps = coarse_level_solve(eps,rhs,2*h);
+    else
+        eps = V_Cycle(eps,rhs,2*h);
+    end
+
+    % Prolongation and Correction
+    phi = phi + prolongation(eps);
+
+    % Post-Smoothing
+    phi = smoothing(phi,f,h);
+end
+```
+
+to also solve the heat equation, that is described on the [jacobi section](#jacobi).
 
 ## Apple
 
