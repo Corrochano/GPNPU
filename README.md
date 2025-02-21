@@ -121,6 +121,12 @@ to also solve the heat equation, that is described on the [jacobi section](#jaco
 
 ## Apple
 
+One of the more innovated parts of this project is use the Apple Neuronal Accelerator (ANE), that are barely documented. </br>
+
+To use the ANE, we need to use the general purpouse algoritmhs into Neuronal Networks, so I use PyTorch to create a "model" that inside only performs the algorithm and then I convert it to the Apple format that is called mlpackage. </br>
+
+We can do that with the Python library coremltools. I explain it with more detail in his own section.
+
 ### Python Dependencies
 - torch==2.3.0 
 - coremltools==8.0b2 
