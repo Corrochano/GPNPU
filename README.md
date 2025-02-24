@@ -18,7 +18,8 @@ Additionally, this work serves as my **Master's Final Project** for the **Master
   * [Jacobi](#jacobi)  
   * [Multigrid Jacobi](#multigrid-jacobi)  
 
-- [Apple](#apple)  
+- [Apple](#apple)
+  * [Convert to MLCore](#convert-to-mlcore)  
   * [Python Dependencies](#python-dependencies)  
   * [M1](#m1)  
     + [Matrix Multiplication](#matrix-multiplication-1)  
@@ -127,7 +128,29 @@ To use the ANE, we need to use the general purpouse algoritmhs into Neuronal Net
 
 We can do that with the Python library coremltools. I explain it with more detail in his own section.
 
-### Convert to MLCORE
+### How to use ANE
+TODO
+
+### Convert to MLCore
+I follow the [Apple documentation](https://apple.github.io/coremltools/docs-guides/source/convert-a-torchvision-model-from-pytorch.html) of how to convert models to MLCore from PyTorch. </br>
+
+As you can see on the link above, there are two forms to convert a pytorch model to MLCore: FromTrace and FromExport. </br>
+In my code I used FromTrace method, for example:
+
+```
+    traced_model = torch.jit.trace(myModel, (arg1, arg2, arg3))
+    jacobi_from_trace = ct.convert(
+        traced_model,
+        inputs=[ct.TensorType(shape=arg1.shape, dtype=npfloat), ct.TensorType(shape=arg2.shape, dtype=npfloat), ct.TensorType(shape=arg3.shape, dtype=npfloat)],
+        outputs=[ct.TensorType(dtype=npfloat)],
+        minimum_deployment_target=ct.target.macOS13,
+        compute_precision=ctfloat
+    )
+```
+In that code, npfloat is the desire precision (for example, np.float16) and ctfloat is the coreml desire precision (for example, ct.precision.FLOAT16). </br>
+
+### Use MLCore
+TODO
 
 ### Python Dependencies
 - torch==2.3.0 
