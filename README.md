@@ -19,7 +19,9 @@ Additionally, this work serves as my **Master's Final Project** for the **Master
   * [Multigrid Jacobi](#multigrid-jacobi)  
 
 - [Apple](#apple)
-  * [Convert to MLCore](#convert-to-mlcore)  
+  * [How to use ANE](#how-to-use-ane)   
+  * [Convert to MLCore](#convert-to-mlcore)
+  * [Use MLCore](#use-mlcore)  
   * [Python Dependencies](#python-dependencies)  
   * [M1](#m1)  
     + [Matrix Multiplication](#matrix-multiplication-1)  
@@ -129,7 +131,30 @@ To use the ANE, we need to use the general purpouse algoritmhs into Neuronal Net
 We can do that with the Python library coremltools. I explain it with more detail in his own section.
 
 ### How to use ANE
-TODO
+In order to use the Apple Neural Engine (ANE) we need to convert our algorithms into a MLCore model, so we need to camouflage our general purpouse algorithms in a machine model archive in order to execute there. </br>
+
+In general, there are thre more problems right there: </br>
+  1. What operations works on ANE are not officially public documented, and there are almost not information, but I can [check a little bit](https://github.com/hollance/neural-engine/blob/master/docs/unsupported-layers.md).
+  2. We can specify to only run on ANE, so there are things that must be executed on CPU. We need to see what happening with our algorithm because this.
+  3. ANE only can run Float16 data.
+
+I needed to test almost all that questions on my just to be sure of the correct running of the different algorithms. </br>
+
+To check if the ANE is on usage, on the first place I used [Asitop](https://github.com/tlkh/asitop) to see the usage on  live time:
+![Captura desde 2025-02-25 11-09-41](https://github.com/user-attachments/assets/178ce7c2-162e-4491-9cd0-d646d32ec775)
+
+But to take metrics I used tegrastats with this command:
+
+```shell
+sudo powermetrics -i 100 --samplers cpu_power -a --hide-cpu-duty-cycle --show-usage-summary --show-extra-power-info --show-process-energy 
+```
+I used the command saving the output into a file to process it and take only the information that I need. </br>
+
+Finally, to see where is executed each operation, I use XCode just opening the model with it on the file explorer and executing a test.
+![image](https://github.com/user-attachments/assets/585e1cb6-271c-4a11-b5d0-c982e1d08ec1)
+
+
+
 
 ### Convert to MLCore
 I follow the [Apple documentation](https://apple.github.io/coremltools/docs-guides/source/convert-a-torchvision-model-from-pytorch.html) of how to convert models to MLCore from PyTorch. </br>
