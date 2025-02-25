@@ -174,9 +174,27 @@ In my code I used FromTrace method, for example:
     )
 ```
 In that code, npfloat is the desire precision (for example, np.float16) and ctfloat is the coreml desire precision (for example, ct.precision.FLOAT16). </br>
+Is necessary to specify minimum_deployment_target=ct.target.macOS13 because there are operations that may execute in CPU instead of ANE otherwise.
 
 ### Use MLCore
-TODO
+The first step to use MLCore is load the previously saved model
+
+```Python
+mlmodel = ct.models.MLModel(f"jacobi{nx}_model_{datatype}_{nt}.mlpackage", compute_units=ct.ComputeUnit.ALL)
+```
+
+On that step, we need to specify on what compute units we want to execute the model among this options:
+  - ct.ComputeUnit.ALL
+  - ct.ComputeUnit.CPU_AND_NE
+  - ct.ComputeUnit.CPU_AND_GPU
+  - ct.ComputeUnit.CPU_ONLY
+
+The second (and last) step is specify the inputs on a dictionary with the sames names as the model inputs as keys and call the model with it:
+
+```Python
+input_dict = {'arg1': arg1, 'arg2': arg2, 'arg3': arg3}
+result = mlmodel.predict(input_dict)
+```
 
 ### Python Dependencies
 - torch==2.3.0 
