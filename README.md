@@ -151,7 +151,8 @@ sudo powermetrics -i 100 --samplers cpu_power -a --hide-cpu-duty-cycle --show-us
 I used the command saving the output into a file to process it and take only the information that I need. </br>
 
 Finally, to see where is executed each operation, I use XCode just opening the model with it on the file explorer and executing a test.
-![image](https://github.com/user-attachments/assets/585e1cb6-271c-4a11-b5d0-c982e1d08ec1)
+
+![image](https://github.com/user-attachments/assets/b69cdfcb-0a05-45dd-91e0-65dc9e1121b7)
 
 
 
