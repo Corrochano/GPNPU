@@ -197,6 +197,8 @@ result = mlmodel.predict(input_dict)
 ```
 
 ### Python Dependencies
+I used Python 3.9.6 with the next dependencies:
+
 - torch==2.3.0 
 - coremltools==8.0b2 
 - torchvision==0.18.0
