@@ -32,7 +32,7 @@ def graphics(cpu_values, gpu_values, ane_values, size, precision, mode, folder_p
     plt.plot(y, gpu_values, label='GPU Consumption', color='#FF5733')
     plt.plot(z, ane_values, label='ANE Consumption', color='#FFC300')
     
-    plt.title(f'{size}000 Energy consumption with {precision} executed with {mode}')
+    plt.title(f'{size} Energy consumption with {precision} executed with {mode}')
     plt.xlabel('Time (ms)')
     plt.ylabel('Consumption (mW)')
     
@@ -87,7 +87,7 @@ if __name__ == "__main__":
        
         # Save all the graphics
         first_path = os.path.join(os.getcwd(), f"jacobi")
-        second_path = os.path.join(first_path, f"{args.size_input}000")
+        second_path = os.path.join(first_path, f"{args.size_input}")
         third_path = os.path.join(second_path, f"{args.precision_input}")
         folder_path = os.path.join(third_path, f"{args.mode_input}")
 

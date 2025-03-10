@@ -38,16 +38,18 @@ class JacobiMachine(nn.Module):
     def interpolate(self, f, target_size): # Applied when we want to convert from coarsergrid to finegrid
         return F.interpolate(f, size=target_size, mode='bilinear', align_corners=False)
 
-    def jacobi(self, Z): # Jacobi method   
+    def jacobi(self, Z, mask): # Jacobi method   
       x = Z
       x_prev = x.clone()
       
+      '''
       mask = torch.ones_like(x)
       
       mask[:, :, 0, :] = 0
       mask[:, :, -1, :] = 0
       mask[:, :, :, 0] = 0
       mask[:, :, :, -1] = 0
+      '''
               
       # Define the 3x3 kernel
       kernel = torch.tensor([[0.0, 0.25, 0.0],
@@ -55,6 +57,8 @@ class JacobiMachine(nn.Module):
                             [0.0, 0.25, 0.0]], dtype=self.datatype).view(1, 1, 3, 3)
                             
       i = torch.tensor(0, dtype=self.datatype)
+      
+      print(mask.shape  )
       
       while torch.ne(i, self.nt):
           x_prev = x.clone()
@@ -65,19 +69,22 @@ class JacobiMachine(nn.Module):
       
       return x
 
-    def forward(self, X, Y):
+    def forward(self, X, Y, Mask1, Mask2, Mask3, Mask4, Mask5, Mask6, Mask7, Mask8, Mask9, Mask10):
+        Masks = [Mask1,Mask2,Mask3,Mask4,Mask5,Mask6,Mask7,Mask8,Mask9,Mask10]
         x = torch.exp(torch.mul( # Take the value of X
                         -50, 
                         torch.add(torch.pow((X - 0.5), 2), torch.pow((Y - 0.5), 2))
                     )).to(self.datatype)
         x = x.unsqueeze(0).unsqueeze(0) # Channel and batch size. Necessary for conv layer
 
+        '''
         mask = torch.ones_like(x, dtype=self.datatype)
         mask[:, :, 0, :] = 0
         mask[:, :, -1, :] = 0
         mask[:, :, :, 0] = 0
         mask[:, :, :, -1] = 0
-
+        '''
+        
         # Define the 3x3 kernel
         kernel = torch.tensor([[0.0, 0.25, 0.0],
                                [0.25, 0.0, 0.25],
@@ -86,19 +93,21 @@ class JacobiMachine(nn.Module):
         # Define num_levels
         num_levels = self.num_levels
         
+        '''
         masks = [mask]
         
         for _ in range(num_levels):# precalculate masks
             masks.append(self.restriction(masks[-1]).to(self.datatype))
         
+        '''
         grids = [x]
-
-        current_mask = mask
+        
+        current_mask = Masks[0]
         
         # Downward phase
         for level in range(1, num_levels):
-            masked_input = torch.mul(grids[level - 1] , (masks[level - 1] > 0))
-            unmasked_input = torch.mul(grids[level - 1] , (1 - masks[level - 1]))
+            masked_input = torch.mul(grids[level - 1] , (Masks[level - 1] > 0))
+            unmasked_input = torch.mul(grids[level - 1] , (1 - Masks[level - 1]))
 
             masked_output = F.conv2d(masked_input, kernel, padding=1)
             unmasked_output = F.conv2d(unmasked_input, kernel, padding=1)
@@ -111,7 +120,7 @@ class JacobiMachine(nn.Module):
         
         # Solve on the coarsest grid
         coarse_solution = grids[-1]
-        coarse_solution = self.jacobi(coarse_solution)  # Solve the classic jacobi there
+        coarse_solution = self.jacobi(coarse_solution, Mask9)  # Solve the classic jacobi there
         grids[-1] = coarse_solution  # Update store solution     
                
         # Upward phase
@@ -123,8 +132,8 @@ class JacobiMachine(nn.Module):
                         
             fine_solution = torch.add( fine_solution, grids[level] ) # += grids[level]  # Add correction to finer grid    
             
-            masked_input = torch.mul(fine_solution , (masks[level] > 0))
-            unmasked_input = torch.mul(fine_solution , (1 - masks[level]))
+            masked_input = torch.mul(fine_solution , (Masks[level] > 0))
+            unmasked_input = torch.mul(fine_solution , (1 - Masks[level]))
 
             masked_output = F.conv2d(masked_input, kernel, padding=1)
             unmasked_output = F.conv2d(unmasked_input, kernel, padding=1)
@@ -136,7 +145,7 @@ class JacobiMachine(nn.Module):
             grids.pop()
         
         final_solution = grids.pop()
-        final_solution = self.jacobi(final_solution)  # Final Jacobi iterations
+        final_solution = self.jacobi(final_solution, Mask1)  # Final Jacobi iterations
     
         return final_solution
         
@@ -166,7 +175,7 @@ def main(grid_size, iterations, dataType):
     jacobiModel = JacobiMachine(nt=nt, datatype=torchfloat)
     jacobiModel.eval()
     jacobiModel.float()
-
+    
     nx=grid_size
     ny=grid_size
     dt=0.001
@@ -177,6 +186,37 @@ def main(grid_size, iterations, dataType):
     x = torch.linspace(0, 1, nx, dtype=torchfloat)
     y = torch.linspace(0, 1, ny, dtype=torchfloat)
     X, Y = torch.meshgrid(x, y)
+    
+    
+    
+    
+    
+    
+    x = torch.exp(torch.mul( # Take the value of X
+                        -50, 
+                        torch.add(torch.pow((X - 0.5), 2), torch.pow((Y - 0.5), 2))
+                    )).to(torchfloat)
+    x = x.unsqueeze(0).unsqueeze(0)    
+    
+    # Create masks
+    mask = torch.ones_like(x, dtype=torchfloat)
+    mask[:, :, 0, :] = 0
+    mask[:, :, -1, :] = 0
+    mask[:, :, :, 0] = 0
+    mask[:, :, :, -1] = 0    
+
+    # Define num_levels
+    num_levels = 9
+    
+    masks = [mask]
+    
+    for _ in range(num_levels):# precalculate masks
+        masks.append(nn.AvgPool2d(kernel_size=2)(masks[-1]).to(torchfloat))    
+    
+    
+    print("Number of masks:", len(masks))
+    
+    
 
     '''
     X = X.float()
@@ -185,7 +225,7 @@ def main(grid_size, iterations, dataType):
 
     print("--------------------------")
     print("Testing the model:")
-    output = jacobiModel(X, Y)
+    output = jacobiModel(X, Y, masks[0], masks[1], masks[2], masks[3], masks[4], masks[5], masks[6], masks[7], masks[8], masks[9])
     print("--------------------------\n")
 
     print("--------------------------")
@@ -196,14 +236,17 @@ def main(grid_size, iterations, dataType):
     print("Y shape:", Y.shape)
 
     # Export from trace
-    traced_model = torch.jit.trace(jacobiModel, (X, Y))
+    traced_model = torch.jit.trace(jacobiModel, (X, Y, masks[0], masks[1], masks[2], masks[3], masks[4], masks[5], masks[6], masks[7], masks[8], masks[9]))
     jacobi_from_trace = ct.convert(
         traced_model,
-        inputs=[ct.TensorType(shape=X.shape, dtype=npfloat), ct.TensorType(shape=Y.shape, dtype=npfloat)],
+        inputs=[ct.TensorType(shape=X.shape, dtype=npfloat), ct.TensorType(shape=Y.shape, dtype=npfloat), ct.TensorType(shape=masks[0].shape, dtype=npfloat), ct.TensorType(shape=masks[1].shape, dtype=npfloat), 
+        ct.TensorType(shape=masks[2].shape, dtype=npfloat), ct.TensorType(shape=masks[3].shape, dtype=npfloat), ct.TensorType(shape=masks[4].shape, dtype=npfloat), 
+        ct.TensorType(shape=masks[5].shape, dtype=npfloat), ct.TensorType(shape=masks[6].shape, dtype=npfloat), ct.TensorType(shape=masks[7].shape, dtype=npfloat), ct.TensorType(shape=masks[8].shape, dtype=npfloat), ct.TensorType(shape=masks[9].shape, dtype=npfloat)],
         outputs=[ct.TensorType(dtype=npfloat)],
         minimum_deployment_target=ct.target.macOS13,
         compute_precision=ctfloat
     )
+    # inputs=[ct.TensorType(shape=X.shape, dtype=npfloat), ct.TensorType(shape=Y.shape, dtype=npfloat), len(masks), ), dtype=npfloat)],
 
     # Export from program
     #exported_jacobi = torch.export.export(jacobiModel, (X, Y))
@@ -212,12 +255,12 @@ def main(grid_size, iterations, dataType):
     print("--------------------------")
     print("Saving the model...")
     print("--------------------------\n")
-    jacobi_from_trace.save(f"jacobi{nx//1000}k_model_{datatype}_{nt}.mlpackage")
+    jacobi_from_trace.save(f"jacobi{nx}_model_{datatype}_{nt}.mlpackage")
 
     print("--------------------------")
     print("Loading the model...")
     print("--------------------------\n")
-    mlmodel = ct.models.MLModel(f"jacobi{nx//1000}k_model_{datatype}_{nt}.mlpackage", compute_units=ct.ComputeUnit.ALL)
+    mlmodel = ct.models.MLModel(f"jacobi{nx}_model_{datatype}_{nt}.mlpackage", compute_units=ct.ComputeUnit.ALL)
 
     print("--------------------------")
     print("Model input description:")
@@ -227,7 +270,8 @@ def main(grid_size, iterations, dataType):
     print("--------------------------")
     print("Testing the model...")
     print("--------------------------\n")
-    input_dict = {'X': X, 'Y': Y}
+    input_dict = {'X': X, 'Y': Y, 'Mask1': masks[0], 'Mask2': masks[1], 'Mask3': masks[2], 'Mask4': masks[3], 'Mask5': masks[4], 'Mask6': masks[5], 'Mask7': masks[6], 'Mask8': masks[7], 'Mask9': masks[8],
+    'Mask10': masks[9]}
     result = mlmodel.predict(input_dict)
 
     print("+++ OK +++")

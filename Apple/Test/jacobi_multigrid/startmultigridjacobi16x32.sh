@@ -41,7 +41,7 @@ echo " Model done to run!"
 sudo pkill -9 powermetrics
 
 echo " Saving metrics..."
-/Users/acorrochano/bin/pyenv/bin/python3 calculatePower.py cpu_16.txt ${size}000 fp16 cpu
+/Users/acorrochano/bin/pyenv/bin/python3 calculatePower.py cpu_16.txt ${size} fp16 cpu
 /Users/acorrochano/bin/pyenv/bin/python3 allGraphic.py cpu_16.txt ${size} fp16 cpu
 echo " Done!"
 
@@ -62,7 +62,7 @@ echo " Model done to run!"
 sudo pkill -9 powermetrics
 
 echo " Saving metrics..."
-/Users/acorrochano/bin/pyenv/bin/python3 calculatePower.py cpu_32.txt ${size}000 fp32 cpu
+/Users/acorrochano/bin/pyenv/bin/python3 calculatePower.py cpu_32.txt ${size} fp32 cpu
 /Users/acorrochano/bin/pyenv/bin/python3 allGraphic.py cpu_32.txt ${size} fp32 cpu
 echo " Done!"
 
@@ -90,7 +90,7 @@ echo " Model done to run!"
 sudo pkill -9 powermetrics
 
 echo " Saving metrics..."
-/Users/acorrochano/bin/pyenv/bin/python3 calculatePower.py gpu_16.txt ${size}000 fp16 gpu
+/Users/acorrochano/bin/pyenv/bin/python3 calculatePower.py gpu_16.txt ${size} fp16 gpu
 /Users/acorrochano/bin/pyenv/bin/python3 allGraphic.py gpu_16.txt ${size} fp16 gpu
 echo " Done!"
 
@@ -111,7 +111,7 @@ echo " Model done to run!"
 sudo pkill -9 powermetrics
 
 echo " Saving metrics..."
-/Users/acorrochano/bin/pyenv/bin/python3 calculatePower.py gpu_32.txt ${size}000 fp32 gpu
+/Users/acorrochano/bin/pyenv/bin/python3 calculatePower.py gpu_32.txt ${size} fp32 gpu
 /Users/acorrochano/bin/pyenv/bin/python3 allGraphic.py gpu_32.txt ${size} fp32 gpu
 echo " Done!"
 
@@ -138,7 +138,7 @@ echo " Model done to run!"
 sudo pkill -9 powermetrics
 
 echo " Saving metrics..."
-/Users/acorrochano/bin/pyenv/bin/python3 calculatePower.py ane_16.txt ${size}000 fp16 ane
+/Users/acorrochano/bin/pyenv/bin/python3 calculatePower.py ane_16.txt ${size} fp16 ane
 /Users/acorrochano/bin/pyenv/bin/python3 allGraphic.py ane_16.txt ${size} fp16 ane
 echo " Done!"
 
@@ -159,7 +159,7 @@ echo " Model done to run!"
 sudo pkill -9 powermetrics
 
 echo " Saving metrics..."
-/Users/acorrochano/bin/pyenv/bin/python3 calculatePower.py ane_32.txt ${size}000 fp32 ane
+/Users/acorrochano/bin/pyenv/bin/python3 calculatePower.py ane_32.txt ${size} fp32 ane
 /Users/acorrochano/bin/pyenv/bin/python3 allGraphic.py ane_32.txt ${size} fp32 ane
 echo " Done!"
 

@@ -16,6 +16,7 @@ limitations under the License.
 
 import argparse
 import torch
+from torch import nn
 import numpy as np
 import coremltools as ct
 import time
@@ -25,11 +26,11 @@ def main(size, runtimes, datatype, device, iterations):
    # Load the Core ML model
    if size.is_integer():
       ssize = str(int(size))
-      grid_size = int(size*1000)
+      grid_size = int(size)
 
    else:
       ssize = str(size)
-      grid_size = int(size*1000)
+      grid_size = int(size)
 
    if datatype == "fp64":
       npfloat = torch.float64
@@ -42,7 +43,7 @@ def main(size, runtimes, datatype, device, iterations):
 
    print("[INFO] Loading the model...")
 
-   model_filename = f"jacobi{(ssize)}k_model_{datatype}_{iterations}.mlpackage"
+   model_filename = f"jacobi{(ssize)}_model_{datatype}_{iterations}.mlpackage"
    if device == "ane":
       mlmodel = ct.models.MLModel(model_filename, compute_units=ct.ComputeUnit.CPU_AND_NE)
    elif device == "gpu":
@@ -67,8 +68,31 @@ def main(size, runtimes, datatype, device, iterations):
    y = torch.linspace(0, 1, ny, dtype=npfloat)
    X, Y = torch.meshgrid(x, y)
    
+   x = torch.exp(torch.mul( # Take the value of X
+                        -50, 
+                        torch.add(torch.pow((X - 0.5), 2), torch.pow((Y - 0.5), 2))
+                    )).to(npfloat)
+   x = x.unsqueeze(0).unsqueeze(0)    
+    
+   # Create masks
+   mask = torch.ones_like(x, dtype=npfloat)
+   mask[:, :, 0, :] = 0
+   mask[:, :, -1, :] = 0
+   mask[:, :, :, 0] = 0
+   mask[:, :, :, -1] = 0    
+
+   # Define num_levels
+   num_levels = 9
+    
+   masks = [mask]
+    
+   for _ in range(num_levels):# precalculate masks
+       masks.append(nn.AvgPool2d(kernel_size=2)(masks[-1]).to(npfloat))    
+   
    # Prepare inputs for the model
-   test_input = {'X': X, 'Y': Y}
+   test_input = {'X': X, 'Y': Y, 'Mask1': masks[0], 'Mask2': masks[1], 'Mask3': masks[2], 'Mask4': masks[3], 'Mask5': masks[4], 'Mask6': masks[5], 'Mask7': masks[6], 'Mask8': masks[7], 'Mask9': masks[8],
+    'Mask10': masks[9]}
+   
 
    print("[INFO] Running inference...")
 

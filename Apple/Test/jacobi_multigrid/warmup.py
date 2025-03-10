@@ -16,6 +16,7 @@ limitations under the License.
 
 import argparse
 import torch
+from torch import nn
 import coremltools as ct
 
 def main(device):
@@ -23,8 +24,8 @@ def main(device):
 
     print("[INFO] Creating input grid...")
     # Create random input grid
-    nx=1000
-    ny=1000
+    nx=1024
+    ny=1024
     dt=0.001
     alpha=0.01 
 
@@ -33,22 +34,41 @@ def main(device):
     x = torch.linspace(0, 1, nx, dtype=torch.float16)
     y = torch.linspace(0, 1, ny, dtype=torch.float16)
     X, Y = torch.meshgrid(x, y)
+    
+    x = torch.exp(torch.mul( # Take the value of X
+                        -50, 
+                        torch.add(torch.pow((X - 0.5), 2), torch.pow((Y - 0.5), 2))
+                    )).to(torch.float16)
+    x = x.unsqueeze(0).unsqueeze(0)    
+    
+    # Create masks
+    mask = torch.ones_like(x, dtype=torch.float16)
+    mask[:, :, 0, :] = 0
+    mask[:, :, -1, :] = 0
+    mask[:, :, :, 0] = 0
+    mask[:, :, :, -1] = 0    
+
+    # Define num_levels
+    num_levels = 9
+    
+    masks = [mask]
+    
+    for _ in range(num_levels):# precalculate masks
+        masks.append(nn.AvgPool2d(kernel_size=2)(masks[-1]).to(torch.float16))    
    
     # Prepare inputs for the model
-    test_input = {'X': X, 'Y': Y}
-
-    # Prepare inputs for the model
-    warmup_dict = {'X': X, 'Y': Y}
+    warmup_dict = {'X': X, 'Y': Y, 'Mask1': masks[0], 'Mask2': masks[1], 'Mask3': masks[2], 'Mask4': masks[3], 'Mask5': masks[4], 'Mask6': masks[5], 'Mask7': masks[6], 'Mask8': masks[7], 'Mask9': masks[8],
+    'Mask10': masks[9]}
 
     print("[INFO] Loading warmup model...")
     if device == "ane":
-        wu_model = ct.models.MLModel('jacobi1k_model_fp16_100.mlpackage', compute_units=ct.ComputeUnit.CPU_AND_NE)
+        wu_model = ct.models.MLModel('jacobi1024_model_fp16_100.mlpackage', compute_units=ct.ComputeUnit.CPU_AND_NE)
     elif device == "gpu":
-        wu_model = ct.models.MLModel('jacobi1k_model_fp16_100.mlpackage', compute_units=ct.ComputeUnit.CPU_AND_GPU)
+        wu_model = ct.models.MLModel('jacobi1024_model_fp16_100.mlpackage', compute_units=ct.ComputeUnit.CPU_AND_GPU)
     elif device == "cpu":
-        wu_model = ct.models.MLModel('jacobi1k_model_fp16_100.mlpackage', compute_units=ct.ComputeUnit.CPU_ONLY)
+        wu_model = ct.models.MLModel('jacobi1024_model_fp16_100.mlpackage', compute_units=ct.ComputeUnit.CPU_ONLY)
     elif device == "all":
-        wu_model = ct.models.MLModel('jacobi1k_model_fp16_100.mlpackage', compute_units=ct.ComputeUnit.ALL)
+        wu_model = ct.models.MLModel('jacobi1024_model_fp16_100.mlpackage', compute_units=ct.ComputeUnit.ALL)
 
     print("[INFO] Running warmup...")
     for i in range(100):

@@ -44,7 +44,7 @@ def graphics(cpu_16, gpu_16, ane_16, cpu_32, gpu_32, ane_32, size, mode, folder_
     plt.plot(z_32, ane_32, label='FP32 ANE Consumption', color='#FFC300', linestyle='--')    
     
     
-    plt.title(f'{size}000 FP16 vs FP32 Energy consumption executed with {mode}')
+    plt.title(f'{size} FP16 vs FP32 Energy consumption executed with {mode}')
     plt.xlabel('Time (ms)')
     plt.ylabel('Consumption (mW)')
     
@@ -98,7 +98,7 @@ if __name__ == "__main__":
        
         # Save all the graphics
         first_path = os.path.join(os.getcwd(), f"jacobi")
-        second_path = os.path.join(first_path, f"{args.size_input}000")
+        second_path = os.path.join(first_path, f"{args.size_input}")
 
         if not os.path.isdir(first_path):
                 os.mkdir(first_path)
