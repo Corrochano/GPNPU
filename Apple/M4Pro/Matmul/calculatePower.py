@@ -44,9 +44,9 @@ if __name__ == "__main__":
 
     # Add arguments
     parser.add_argument("file_input", type=str, help="File with the data to process")
-    parser.add_argument("size_input", type=str, help="Size of the Jacobi's grid")
+    parser.add_argument("size_input", type=str, help="Size of the matrix")
     parser.add_argument("precision_input", type=str, help="Precision of the model (fp32/fp16)")
-    parser.add_argument("mode_input", type=str, help="Execution mode (CPU/GPU/ANE)")
+    parser.add_argument("mode_input", type=str, help="Execution mode (CPU/GPU/ANE/ALL)")
     
     # Parse the arguments
     args = parser.parse_args()
@@ -61,26 +61,25 @@ if __name__ == "__main__":
 
         text = f.read()
 
-        lines = text.split('CPU 11 down residency:   ')
+        lines = text.split('System instructions per clock:')
 
         f.close()
-    
+        
         # Save each device data
         cpu_power = []
         gpu_power = []
         ane_power = []
-        total_power = []
 
         for i, line in enumerate(lines):
             if i != 0:
-                cpu_power.append(int(line.split('\n')[2].split(' ')[2]))
-                gpu_power.append(int(line.split('\n')[3].split(' ')[2]))
-                ane_power.append(int(line.split('\n')[4].split(' ')[2]))
-                total_power.append(int(line.split('\n')[5].split(' ')[7]))                
+                cpu_power.append(int(line.split('\n')[1].split(' ')[2]))
+                gpu_power.append(int(line.split('\n')[2].split(' ')[2]))
+                ane_power.append(int(line.split('\n')[3].split(' ')[2]))
+                
        
         # Save all the graphics
-        first_path = os.path.join(os.getcwd(), f"jacobi")
-        second_path = os.path.join(first_path, f"{args.size_input}000")
+        first_path = os.path.join(os.getcwd(), f"matmul")
+        second_path = os.path.join(first_path, f"{args.size_input}")
         third_path = os.path.join(second_path, f"{args.precision_input}")
         folder_path = os.path.join(third_path, f"{args.mode_input}")
 

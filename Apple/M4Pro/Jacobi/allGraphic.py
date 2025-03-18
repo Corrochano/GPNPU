@@ -63,27 +63,23 @@ if __name__ == "__main__":
 
         text = f.read()
 
-        lines = text.split('System instructions per clock:')
+        lines = text.split('CPU 11 down residency:   ')
 
         f.close()
-        
+    
         # Save each device data
         cpu_power = []
         gpu_power = []
         ane_power = []
+        total_power = []
 
         for i, line in enumerate(lines):
             if i != 0:
-                '''
-                print("cpu: ", int(line.split('\n')[1].split(' ')[2]))
-                print("gpu: ", int(line.split('\n')[2].split(' ')[2]))
-                print("ane: ", int(line.split('\n')[3].split(' ')[2]))
-                '''
-                
-                cpu_power.append(int(line.split('\n')[1].split(' ')[2]))
-                gpu_power.append(int(line.split('\n')[2].split(' ')[2]))
-                ane_power.append(int(line.split('\n')[3].split(' ')[2]))
-                
+                cpu_power.append(int(line.split('\n')[2].split(' ')[2]))
+                gpu_power.append(int(line.split('\n')[3].split(' ')[2]))
+                ane_power.append(int(line.split('\n')[4].split(' ')[2]))
+                total_power.append(int(line.split('\n')[5].split(' ')[7]))
+                    
        
         # Save all the graphics
         first_path = os.path.join(os.getcwd(), f"jacobi")

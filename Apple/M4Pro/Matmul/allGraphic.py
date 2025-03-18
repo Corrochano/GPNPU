@@ -17,25 +17,27 @@ import os
 import argparse
 import matplotlib.pyplot as plt
 
-
-def graphics(values, device, size, precision, mode, folder_path):
-    # Create x and y axis
-    x = list(range(len(values)))
+def graphics(cpu_values, gpu_values, ane_values, size, precision, mode, folder_path):
+    x = list(range(len(cpu_values)))
     x = list(map(lambda i: i * 100, x))
-    y = values
-    
+    y = list(range(len(gpu_values)))
+    y = list(map(lambda i: i * 100, y))
+    z = list(range(len(ane_values)))
+    z = list(map(lambda i: i * 100, z))
+        
     plt.figure(figsize=(45,33))
-    
-    # Generate graphic
-    plt.plot(x, y)
 
-    # Title and labels
-    plt.title(f'{size} {device} Energy consumption with {precision} executed with {mode}')
+    # Generate graphic
+    plt.plot(x, cpu_values, label='CPU Consumption', color='#0000FF')
+    plt.plot(y, gpu_values, label='GPU Consumption', color='#FF5733')
+    plt.plot(z, ane_values, label='ANE Consumption', color='#FFC300')
+    
+    plt.title(f'{size} Energy consumption with {precision} executed with {mode}')
     plt.xlabel('Time (ms)')
     plt.ylabel('Consumption (mW)')
-
-    #plt.legend()
-    plt.savefig(os.path.join(folder_path, f'{size}_{device}_{precision}_mode{mode}.svg'))
+    
+    plt.legend()
+    plt.savefig(os.path.join(folder_path, f'AllGraphic_{size}_{precision}_mode{mode}.svg'))
     plt.clf()
 
 if __name__ == "__main__":
@@ -44,9 +46,9 @@ if __name__ == "__main__":
 
     # Add arguments
     parser.add_argument("file_input", type=str, help="File with the data to process")
-    parser.add_argument("size_input", type=str, help="Size of the Jacobi's grid")
+    parser.add_argument("size_input", type=str, help="Size of the matrix")
     parser.add_argument("precision_input", type=str, help="Precision of the model (fp32/fp16)")
-    parser.add_argument("mode_input", type=str, help="Execution mode (CPU/GPU/ANE)")
+    parser.add_argument("mode_input", type=str, help="Execution mode (CPU/GPU/ANE/ALL)")
     
     # Parse the arguments
     args = parser.parse_args()
@@ -61,26 +63,27 @@ if __name__ == "__main__":
 
         text = f.read()
 
-        lines = text.split('CPU 11 down residency:   ')
+    lines = text.split('CPU 11 down residency:   ')
 
-        f.close()
+    f.close()
     
-        # Save each device data
-        cpu_power = []
-        gpu_power = []
-        ane_power = []
-        total_power = []
+    # Save each device data
+    cpu_power = []
+    gpu_power = []
+    ane_power = []
+    total_power = []
 
-        for i, line in enumerate(lines):
-            if i != 0:
-                cpu_power.append(int(line.split('\n')[2].split(' ')[2]))
-                gpu_power.append(int(line.split('\n')[3].split(' ')[2]))
-                ane_power.append(int(line.split('\n')[4].split(' ')[2]))
-                total_power.append(int(line.split('\n')[5].split(' ')[7]))                
+    for i, line in enumerate(lines):
+        if i != 0:
+            cpu_power.append(int(line.split('\n')[2].split(' ')[2]))
+            gpu_power.append(int(line.split('\n')[3].split(' ')[2]))
+            ane_power.append(int(line.split('\n')[4].split(' ')[2]))
+            total_power.append(int(line.split('\n')[5].split(' ')[7]))
+                
        
         # Save all the graphics
-        first_path = os.path.join(os.getcwd(), f"jacobi")
-        second_path = os.path.join(first_path, f"{args.size_input}000")
+        first_path = os.path.join(os.getcwd(), f"matmul")
+        second_path = os.path.join(first_path, f"{args.size_input}")
         third_path = os.path.join(second_path, f"{args.precision_input}")
         folder_path = os.path.join(third_path, f"{args.mode_input}")
 
@@ -93,7 +96,5 @@ if __name__ == "__main__":
         if not os.path.isdir(folder_path):
                 os.mkdir(folder_path)
         
-        graphics(cpu_power, "CPU", args.size_input, args.precision_input, args.mode_input, folder_path)
-        graphics(gpu_power, "GPU", args.size_input, args.precision_input, args.mode_input, folder_path)
-        graphics(ane_power, "ANE", args.size_input, args.precision_input, args.mode_input, folder_path)
+        graphics(cpu_power, gpu_power, ane_power, args.size_input, args.precision_input, args.mode_input, folder_path)
         
