@@ -65,14 +65,13 @@ def read_file(fileName):
     cpu_power = []
     gpu_power = []
     ane_power = []
-    total_power = []
 
     for i, line in enumerate(lines):
         if i != 0:
-            cpu_power.append(int(line.split('\n')[2].split(' ')[2]))
-            gpu_power.append(int(line.split('\n')[3].split(' ')[2]))
-            ane_power.append(int(line.split('\n')[4].split(' ')[2]))
-            total_power.append(int(line.split('\n')[5].split(' ')[7]))
+            cpu_power.append(int(line.split('\n')[1].split(' ')[2]))
+            gpu_power.append(int(line.split('\n')[2].split(' ')[2]))
+            ane_power.append(int(line.split('\n')[3].split(' ')[2]))
+            total_power.append(int(line.split('\n')[4].split(' ')[7]))
             
     mean = sum(total_power) / len(total_power)
     cpu_mean = sum(cpu_power) / len(cpu_power)
@@ -94,8 +93,8 @@ def read_file(fileName):
     print("Max CPU total power on " + fileName + ':', cpu_max )
     print("Max GPU total power on " + fileName + ':', gpu_max )
     print("Max ANE total power on " + fileName + ':', ane_max )
-    print("++++++++++++++++++++++++++++++++++++++++++++++++++++")
-        
+    print("++++++++++++++++++++++++++++++++++++++++++++++++++++") 
+    
     return cpu_power, gpu_power, ane_power
 
 if __name__ == "__main__":
@@ -105,7 +104,7 @@ if __name__ == "__main__":
     # Add arguments
     parser.add_argument("file_input_16", type=str, help="File with the fp16 data to process")
     parser.add_argument("file_input_32", type=str, help="File with the fp32 data to process")
-    parser.add_argument("size_input", type=str, help="Size of the matrix")
+    parser.add_argument("size_input", type=str, help="Size of the grid")
     parser.add_argument("mode_input", type=str, help="Execution mode (CPU/GPU/ANE/ALL)")
     
     # Parse the arguments
@@ -121,7 +120,7 @@ if __name__ == "__main__":
         cpu_32, gpu_32, ane_32 = read_file(args.file_input_32)        
        
         # Save all the graphics
-        first_path = os.path.join(os.getcwd(), f"matmul")
+        first_path = os.path.join(os.getcwd(), f"jacobi")
         second_path = os.path.join(first_path, f"{args.size_input}")
 
         if not os.path.isdir(first_path):

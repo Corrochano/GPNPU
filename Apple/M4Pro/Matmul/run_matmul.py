@@ -19,6 +19,7 @@ import torch
 import numpy as np
 import coremltools as ct
 import time
+import math
 
 def main(size, runtimes, datatype, device):
    
@@ -63,20 +64,30 @@ def main(size, runtimes, datatype, device):
    input_dict = {'A': example_A, 'B': example_B}
 
    print("[INFO] Running inference...")
+   
+   minTime = math.inf
 
    # Run inference using the Core ML model
    start_time = time.time()
    for i in range(runtimes):
+      start_local_time = time.time()
       result = mlmodel.predict(input_dict)
+      end_local_time = time.time()
+      local_elapsed_time = ( end_local_time - start_local_time )
+      minTime = minTime if (minTime < local_elapsed_time) else local_elapsed_time
    end_time = time.time()
    elapsed_time = ( end_time - start_time ) / runtimes
 
    flops = 2 * (matrix_size ** 3)
    gflops = flops / (10**9)  # Convert to GFLOPs
    gflops_per_second = gflops / elapsed_time 
+   
+   min_gflops_per_second = gflops / minTime 
+   
    print("****************************************************************************************************************************")
    print(f"Matmul of size {matrix_size}x{matrix_size} in {datatype} took {elapsed_time:.4f} seconds.")
    print(f"Performance: {gflops_per_second:.2f} GFLOPs/s")
+   print(f"Max Performance took {minTime:.4f} seconds with {min_gflops_per_second:.2f} GFLOPs/s")
    print("****************************************************************************************************************************")
    # Inspect the Core ML model to view input and output names
 #   print("Model Inputs:", mlmodel.input_description)

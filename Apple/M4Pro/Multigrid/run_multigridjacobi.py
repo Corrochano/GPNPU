@@ -16,17 +16,17 @@ limitations under the License.
 
 import argparse
 import torch
+from torch import nn
 import numpy as np
 import coremltools as ct
 import time
-import math
 
 def main(size, runtimes, datatype, device, iterations):
    
    # Load the Core ML model
    if size.is_integer():
       ssize = str(int(size))
-      grid_size = int(size) # *1000)
+      grid_size = int(size)
 
    else:
       ssize = str(size)
@@ -57,28 +57,45 @@ def main(size, runtimes, datatype, device, iterations):
 
    print("[INFO] Creating input grid...")
    # Create random input grid
-   x = torch.linspace(0, 1, grid_size, dtype=npfloat)
-   y = torch.linspace(0, 1, grid_size, dtype=npfloat)
+   nx=grid_size
+   ny=grid_size
+   dt=0.001
+   alpha=0.01 
+
+   dx, dy = 1.0 / (nx - 1), 1.0 / (ny - 1)  # spatial step sizes
+
+   x = torch.linspace(0, 1, nx, dtype=npfloat)
+   y = torch.linspace(0, 1, ny, dtype=npfloat)
    X, Y = torch.meshgrid(x, y)
    
-   x = torch.exp(torch.mul( # If I cast everything, there are still operations on INT32 idk why and the performance and consume increase a lot
-                    -50, 
-                    torch.add(torch.pow((X - 0.5), 2), torch.pow((Y - 0.5), 2))
-                ))
-   x = x.unsqueeze(0).unsqueeze(0) # Channel and batch size. Necessary for conv layer
-   x_prev = x.clone()
+   x = torch.exp(torch.mul( # Take the value of X
+                        -50, 
+                        torch.add(torch.pow((X - 0.5), 2), torch.pow((Y - 0.5), 2))
+                    )).to(npfloat)
+   x = x.unsqueeze(0).unsqueeze(0)    
+    
+   # Create masks
+   mask = torch.ones_like(x, dtype=npfloat)
+   mask[:, :, 0, :] = 0
+   mask[:, :, -1, :] = 0
+   mask[:, :, :, 0] = 0
+   mask[:, :, :, -1] = 0    
 
-   mask = torch.ones_like(x)
-   mask[:, :, 0, :] = 0        # Top boundary
-   mask[:, :, -1, :] = 0       # Bottom boundary
-   mask[:, :, :, 0] = 0        # Left boundary
-   mask[:, :, :, -1] = 0       # Right boundary         
+   # Define num_levels
+   num_levels = 9
+    
+   masks = [mask]
+    
+   for _ in range(num_levels):# precalculate masks
+       masks.append(nn.AvgPool2d(kernel_size=2)(masks[-1]).to(npfloat))    
    
    # Prepare inputs for the model
-   input_dict = {'X': x, 'X_prev': x_prev, 'Mask': mask}
+   test_input = {'X': X, 'Y': Y, 'Mask1': masks[0], 'Mask2': masks[1], 'Mask3': masks[2], 'Mask4': masks[3], 'Mask5': masks[4], 'Mask6': masks[5], 'Mask7': masks[6], 'Mask8': masks[7], 'Mask9': masks[8],
+    'Mask10': masks[9]}
+   
 
    print("[INFO] Running inference...")
-
+   
    minTime = math.inf
 
    # Run inference using the Core ML model
@@ -91,19 +108,41 @@ def main(size, runtimes, datatype, device, iterations):
       minTime = minTime if (minTime < local_elapsed_time) else local_elapsed_time
    end_time = time.time()
    elapsed_time = ( end_time - start_time ) / runtimes
-
-   # Calculate GFLOPs
+   
+   # NEED TO ADJUST THE FORMULA
+   '''
+   # Calculate GFLOPs for jacobi
+   init_flops = 7 * (grid_size ** 2) # Initial operation outside the while
    # While flops
-   flops = iterations * (10 * (grid_size ** 2)) # 3x3 convolution has 10 operations
+   conv_flops = iterations * (17 * (grid_size ** 2)) # 3x3 convolution has 17 operations
+   calculateNext_flops = grid_size ** 2 # Only a mul op
+   diff_flops = 3 * (grid_size ** 2) # max, abs and sub (not sure about the max needs to be into account)
+   iAdd_flops = 1 # i++ operation
+   
+   jacobiFlops = (init_flops + (iterations * (conv_flops + calculateNext_flops + diff_flops + iAdd_flops))) *  mlmodel.num_levels # total iterations on the while multiplied by all the ops on there
+   '''
+   '''
+   jacobi_flops = iterations * (10 * (grid_size ** 2))
+   
+   restriction_flops = sum((grid_size // (2**l))**2 for l in range(9 - 1))
+   
+   interpolation_flops = sum(4 * (grid_size // (2**l))**2 for l in range(9 - 1))
+   
+   flops = jacobi_flops + restriction_flops + interpolation_flops
+   '''
+   
+
+   
+   
+   
+   
+   
    
    gflops = flops / (10**9)  # Convert to GFLOPs
    gflops_per_second = gflops / elapsed_time 
-   min_gflops_per_second = gflops / minTime 
-   
    print("****************************************************************************************************************************")
    print(f"Jacobi of size {grid_size}x{grid_size} with {iterations} iterations in {datatype} took {elapsed_time:.4f} seconds.")
-   print(f"Performance: {gflops_per_second:.2f} GFLOPs/s")
-   print(f"Max Performance took {minTime:.4f} seconds with {min_gflops_per_second:.2f} GFLOPs/s")
+   print(f"Max Performance took {minTime:.4f} seconds
    print("****************************************************************************************************************************")
    # Inspect the Core ML model to view input and output names
 #   print("Model Inputs:", mlmodel.input_description)

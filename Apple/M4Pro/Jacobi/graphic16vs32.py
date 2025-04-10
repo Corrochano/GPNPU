@@ -80,11 +80,21 @@ def read_file(fileName):
     gpu_mean = sum(gpu_power) / len(gpu_power)
     ane_mean = sum(ane_power) / len(ane_power)
     
+    maxim = max(total_power)
+    cpu_max = max(cpu_power)
+    gpu_max = max(gpu_power)
+    ane_max = max(ane_power)    
+    
     print("++++++++++++++++++++++++++++++++++++++++++++++++++++")
     print("Mean total power on " + fileName + ':', mean )
     print("Mean CPU total power on " + fileName + ':', cpu_mean )
     print("Mean GPU total power on " + fileName + ':', gpu_mean )
     print("Mean ANE total power on " + fileName + ':', ane_mean )
+    print("++++++++++++++++++++++++++++++++++++++++++++++++++++")
+    print("Max total power on " + fileName + ':', maxim )
+    print("Max CPU total power on " + fileName + ':', cpu_max )
+    print("Max GPU total power on " + fileName + ':', gpu_max )
+    print("Max ANE total power on " + fileName + ':', ane_max )
     print("++++++++++++++++++++++++++++++++++++++++++++++++++++")
     
     return cpu_power, gpu_power, ane_power
