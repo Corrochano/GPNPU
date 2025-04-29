@@ -20,6 +20,8 @@ from torch import nn
 import numpy as np
 import coremltools as ct
 import time
+import math
+import os
 
 def main(size, runtimes, datatype, device, iterations):
    
@@ -90,7 +92,7 @@ def main(size, runtimes, datatype, device, iterations):
        masks.append(nn.AvgPool2d(kernel_size=2)(masks[-1]).to(npfloat))    
    
    # Prepare inputs for the model
-   test_input = {'X': X, 'Y': Y, 'Mask1': masks[0], 'Mask2': masks[1], 'Mask3': masks[2], 'Mask4': masks[3], 'Mask5': masks[4], 'Mask6': masks[5], 'Mask7': masks[6], 'Mask8': masks[7], 'Mask9': masks[8],
+   input_dict = {'X': X, 'Y': Y, 'Mask1': masks[0], 'Mask2': masks[1], 'Mask3': masks[2], 'Mask4': masks[3], 'Mask5': masks[4], 'Mask6': masks[5], 'Mask7': masks[6], 'Mask8': masks[7], 'Mask9': masks[8],
     'Mask10': masks[9]}
    
 
@@ -129,21 +131,37 @@ def main(size, runtimes, datatype, device, iterations):
    interpolation_flops = sum(4 * (grid_size // (2**l))**2 for l in range(9 - 1))
    
    flops = jacobi_flops + restriction_flops + interpolation_flops
-   '''
-   
 
-   
-   
-   
-   
-   
-   
    gflops = flops / (10**9)  # Convert to GFLOPs
    gflops_per_second = gflops / elapsed_time 
+   '''   
+
    print("****************************************************************************************************************************")
    print(f"Jacobi of size {grid_size}x{grid_size} with {iterations} iterations in {datatype} took {elapsed_time:.4f} seconds.")
-   print(f"Max Performance took {minTime:.4f} seconds
+   print(f"Max Performance took {minTime:.4f} seconds")
    print("****************************************************************************************************************************")
+   
+   if os.path.exists(f"jacobi_{grid_size}x{grid_size}_{device}.csv"):
+
+        log_content = (
+            f"{datatype};{elapsed_time:.4f};{minTime:.4f};"
+        )
+
+   else:
+        log_content = (
+            f"datatype;MeanTime;PeakTime;datatype;MeanTime;PeakTime;"
+            f"Datatype;TotalMeanEnergy;cpuMeanEnergy;gpuMeanEnergy;aneMeanEnergy;"
+            f"Datatype;TotalMaxEnergy;cpuMaxEnergy;gpuMaxEnergy;aneMaxEnergy;"
+            f"Datatype;TotalMeanEnergy;cpuMeanEnergy;gpuMeanEnergy;aneMeanEnergy;"
+            f"Datatype;TotalMaxEnergy;cpuMaxEnergy;gpuMaxEnergy;aneMaxEnergy;\n"
+            f"{datatype};{elapsed_time:.4f};{minTime:.4f};"
+        )
+
+
+   log_filename = f"jacobi_{grid_size}x{grid_size}_{device}.csv"
+   with open(log_filename, "a") as f:
+       f.write(log_content)
+   
    # Inspect the Core ML model to view input and output names
 #   print("Model Inputs:", mlmodel.input_description)
 #   print("Model Outputs:", mlmodel.output_description)
