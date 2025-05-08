@@ -52,7 +52,7 @@ def graphics(cpu_16, gpu_16, ane_16, cpu_32, gpu_32, ane_32, size, mode, folder_
     plt.savefig(os.path.join(folder_path, f'16vs32{size}_mode{mode}.svg'))
     plt.clf()
 
-def read_file(fileName):
+def read_file(fileName, grid_size, device):
     f = open(fileName)
 
     text = f.read()
@@ -65,12 +65,48 @@ def read_file(fileName):
     cpu_power = []
     gpu_power = []
     ane_power = []
+    total_power = []
 
     for i, line in enumerate(lines):
         if i != 0:
             cpu_power.append(int(line.split('\n')[1].split(' ')[2]))
             gpu_power.append(int(line.split('\n')[2].split(' ')[2]))
             ane_power.append(int(line.split('\n')[3].split(' ')[2]))
+            print(int(line.split('\n')[4].split(' ')[7]))
+            total_power.append(int(line.split('\n')[4].split(' ')[7]))
+            
+    mean = sum(total_power) / len(total_power)
+    cpu_mean = sum(cpu_power) / len(cpu_power)
+    gpu_mean = sum(gpu_power) / len(gpu_power)
+    ane_mean = sum(ane_power) / len(ane_power)
+    
+    maxim = max(total_power)
+    cpu_max = max(cpu_power)
+    gpu_max = max(gpu_power)
+    ane_max = max(ane_power)    
+    
+    print("++++++++++++++++++++++++++++++++++++++++++++++++++++")
+    print("Mean total power on " + fileName + ':', mean )
+    print("Mean CPU total power on " + fileName + ':', cpu_mean )
+    print("Mean GPU total power on " + fileName + ':', gpu_mean )
+    print("Mean ANE total power on " + fileName + ':', ane_mean )
+    print("++++++++++++++++++++++++++++++++++++++++++++++++++++")
+    print("Max total power on " + fileName + ':', maxim )
+    print("Max CPU total power on " + fileName + ':', cpu_max )
+    print("Max GPU total power on " + fileName + ':', gpu_max )
+    print("Max ANE total power on " + fileName + ':', ane_max )
+    print("++++++++++++++++++++++++++++++++++++++++++++++++++++")
+    
+    fp_precision = fileName.split('_')[1].split('.')[0]
+    
+    log_content = (
+        f"{fp_precision};{mean};{cpu_mean};{gpu_mean};{ane_mean};"
+        f"{fp_precision};{maxim};{cpu_max};{gpu_max};{ane_max};"
+    )
+
+    log_filename = f"jacobi_{grid_size}x{grid_size}_{device}.csv"
+    with open(log_filename, "a") as f:
+        f.write(log_content)     
     
     return cpu_power, gpu_power, ane_power
 
@@ -93,8 +129,8 @@ if __name__ == "__main__":
         parser.print_usage()  # Shows the usage message
     else:
         # Read the specified files
-        cpu_16, gpu_16, ane_16 = read_file(args.file_input_16)
-        cpu_32, gpu_32, ane_32 = read_file(args.file_input_32)        
+        cpu_16, gpu_16, ane_16 = read_file(args.file_input_16, args.size_input, args.mode_input)
+        cpu_32, gpu_32, ane_32 = read_file(args.file_input_32, args.size_input, args.mode_input)        
        
         # Save all the graphics
         first_path = os.path.join(os.getcwd(), f"jacobi")

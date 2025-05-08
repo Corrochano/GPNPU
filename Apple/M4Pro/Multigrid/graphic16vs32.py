@@ -99,7 +99,7 @@ def read_file(fileName, grid_size, device):
     fp_precision = fileName.split('_')[1].split('.')[0]
     
     log_content = (
-        f"{fp_precision};{mean};{cpu_mean};{cpu_mean};{ane_mean};"
+        f"{fp_precision};{mean};{cpu_mean};{gpu_mean};{ane_mean};"
         f"{fp_precision};{maxim};{cpu_max};{gpu_max};{ane_max};"
     )
 
