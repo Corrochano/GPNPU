@@ -56,6 +56,7 @@ class JacobiMachine(nn.Module):
       return x
 
     def forward(self, X, Mask1, Mask2, Mask3, Mask4, Mask5, Mask6, Mask7, Mask8, Mask9, Mask10):
+        snapshots = []
         Masks = [Mask1,Mask2,Mask3,Mask4,Mask5,Mask6,Mask7,Mask8,Mask9,Mask10]
         x = X
         
@@ -86,9 +87,7 @@ class JacobiMachine(nn.Module):
             grids.append(coarse_residual)  # Store
             
             # Update graph
-            pcm.set_array(coarse_residual)
-            axis.set_title("Distribution")
-            plt.pause(0.01)
+            snapshots.append(coarse_residual.clone())
         
         # Solve on the coarsest grid
         coarse_solution = grids[-1]
@@ -96,9 +95,7 @@ class JacobiMachine(nn.Module):
         grids[-1] = coarse_solution  # Update store solution
         
         # Update graph
-        pcm.set_array(coarse_solution)
-        axis.set_title("Distribution")
-        plt.pause(0.01)     
+        snapshots.append(coarse_solution)
                
         # Upward phase
         for level in range(num_levels - 2, -1, -1):
@@ -118,9 +115,7 @@ class JacobiMachine(nn.Module):
             fine_solution = masked_output + unmasked_output
             
             # Update graph
-            pcm.set_array(fine_solution)
-            axis.set_title("Distribution")
-            plt.pause(0.01)                 
+            snapshots.append(fine_solution)
             
         # Final refinement on the finest grid        
         while len(grids) > 1:
@@ -130,13 +125,13 @@ class JacobiMachine(nn.Module):
         final_solution = self.jacobi(final_solution, Mask1)  # Final Jacobi iterations
         
         # Update graph
-        pcm.set_array(final_solution)
-        axis.set_title("Distribution")
-        plt.pause(0.01)                 
+        snapshots.append(final_solution)       
     
-        return final_solution
+        return snapshots
 
 # Defining our problem
+ctfloat = ct.precision.FLOAT16
+npfloat = np.float16
 torchfloat = torch.float16
 nodes = 1024
 
@@ -176,16 +171,16 @@ for _ in range(num_levels):# precalculate masks
     masks.append(nn.AvgPool2d(kernel_size=2)(masks[-1]).to(torchfloat))    
 
 # Visualizing with a plot
-fig, axis = plt.subplots()
+#fig, axis = plt.subplots()
 
-pcm = axis.pcolormesh(u, cmap=plt.cm.jet, vmin=0, vmax=100)
-plt.colorbar(pcm, ax=axis)
+#pcm = axis.pcolormesh(u.squeeze().detach().cpu().numpy(), cmap=plt.cm.jet, vmin=0, vmax=100)
+#plt.colorbar(pcm, ax=axis)
 
 # Export from trace
 traced_model = torch.jit.trace(jacobiModel, (u, masks[0], masks[1], masks[2], masks[3], masks[4], masks[5], masks[6], masks[7], masks[8], masks[9]))
 jacobi_from_trace = ct.convert(
     traced_model,
-    inputs=[ct.TensorType(shape=X.shape, dtype=npfloat), ct.TensorType(shape=Y.shape, dtype=npfloat), ct.TensorType(shape=masks[0].shape, dtype=npfloat), ct.TensorType(shape=masks[1].shape, dtype=npfloat), 
+    inputs=[ct.TensorType(shape=u.shape, dtype=npfloat), ct.TensorType(shape=masks[0].shape, dtype=npfloat), ct.TensorType(shape=masks[1].shape, dtype=npfloat), 
     ct.TensorType(shape=masks[2].shape, dtype=npfloat), ct.TensorType(shape=masks[3].shape, dtype=npfloat), ct.TensorType(shape=masks[4].shape, dtype=npfloat), 
     ct.TensorType(shape=masks[5].shape, dtype=npfloat), ct.TensorType(shape=masks[6].shape, dtype=npfloat), ct.TensorType(shape=masks[7].shape, dtype=npfloat), ct.TensorType(shape=masks[8].shape, dtype=npfloat), ct.TensorType(shape=masks[9].shape, dtype=npfloat)],
     outputs=[ct.TensorType(dtype=npfloat)],
@@ -204,5 +199,9 @@ input_dict = {'X': u, 'Mask1': masks[0], 'Mask2': masks[1], 'Mask3': masks[2], '
     'Mask10': masks[9]}
 result = mlmodel.predict(input_dict)
 
-
-plt.show()
+for snap in result:
+    plt.imshow(snap.squeeze().cpu().numpy(), cmap='jet', vmin=0, vmax=100)
+    plt.colorbar()
+    plt.pause(0.1)
+    plt.clf()
+    
