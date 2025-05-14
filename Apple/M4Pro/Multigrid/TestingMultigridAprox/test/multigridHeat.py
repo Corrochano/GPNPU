@@ -18,6 +18,8 @@ import torch
 from torch import nn
 import coremltools as ct
 import torch.nn.functional as F
+from matplotlib import cm
+import imageio
 
 # Multigrid
 class JacobiMachine(nn.Module):
@@ -26,6 +28,7 @@ class JacobiMachine(nn.Module):
         self.datatype=datatype
         self.num_levels = num_levels
         self.nt = torch.tensor(nt, dtype=self.datatype)
+        self.snaps = []
 
     def restriction(self, residual): # Applied when we want to convert from finegrid to coarsergrid
         return nn.AvgPool2d(kernel_size=2)(residual)
@@ -84,7 +87,7 @@ class JacobiMachine(nn.Module):
             
             coarse_residual = self.restriction(residual)  # Restrict to coarser grid
         
-            grids.append(coarse_residual)  # Store
+            grids.append(coarse_residual.clone())  # Store
             
             # Update graph
             snapshots.append(coarse_residual.clone())
@@ -95,7 +98,7 @@ class JacobiMachine(nn.Module):
         grids[-1] = coarse_solution  # Update store solution
         
         # Update graph
-        snapshots.append(coarse_solution)
+        snapshots.append(coarse_solution.clone())
                
         # Upward phase
         for level in range(num_levels - 2, -1, -1):
@@ -115,7 +118,7 @@ class JacobiMachine(nn.Module):
             fine_solution = masked_output + unmasked_output
             
             # Update graph
-            snapshots.append(fine_solution)
+            snapshots.append(fine_solution.clone())
             
         # Final refinement on the finest grid        
         while len(grids) > 1:
@@ -125,11 +128,14 @@ class JacobiMachine(nn.Module):
         final_solution = self.jacobi(final_solution, Mask1)  # Final Jacobi iterations
         
         # Update graph
-        snapshots.append(final_solution)       
+        snapshots.append(final_solution.clone())
+        
+        self.snaps = snapshots      
     
-        return snapshots
+        return final_solution
 
 # Defining our problem
+datatype = "fp16"
 ctfloat = ct.precision.FLOAT16
 npfloat = np.float16
 torchfloat = torch.float16
@@ -176,32 +182,43 @@ for _ in range(num_levels):# precalculate masks
 #pcm = axis.pcolormesh(u.squeeze().detach().cpu().numpy(), cmap=plt.cm.jet, vmin=0, vmax=100)
 #plt.colorbar(pcm, ax=axis)
 
-# Export from trace
-traced_model = torch.jit.trace(jacobiModel, (u, masks[0], masks[1], masks[2], masks[3], masks[4], masks[5], masks[6], masks[7], masks[8], masks[9]))
-jacobi_from_trace = ct.convert(
-    traced_model,
-    inputs=[ct.TensorType(shape=u.shape, dtype=npfloat), ct.TensorType(shape=masks[0].shape, dtype=npfloat), ct.TensorType(shape=masks[1].shape, dtype=npfloat), 
-    ct.TensorType(shape=masks[2].shape, dtype=npfloat), ct.TensorType(shape=masks[3].shape, dtype=npfloat), ct.TensorType(shape=masks[4].shape, dtype=npfloat), 
-    ct.TensorType(shape=masks[5].shape, dtype=npfloat), ct.TensorType(shape=masks[6].shape, dtype=npfloat), ct.TensorType(shape=masks[7].shape, dtype=npfloat), ct.TensorType(shape=masks[8].shape, dtype=npfloat), ct.TensorType(shape=masks[9].shape, dtype=npfloat)],
-    outputs=[ct.TensorType(dtype=npfloat)],
-    minimum_deployment_target=ct.target.macOS13,
-    compute_precision=ctfloat
-)
+# Testing
+output = jacobiModel(u, masks[0], masks[1], masks[2], masks[3], masks[4], masks[5], masks[6], masks[7], masks[8], masks[9])
 
-# Saving
-jacobi_from_trace.save(f"jacobi{nx}_model_{datatype}_{nt}.mlpackage")
-
-# Loading
-mlmodel = ct.models.MLModel(f"jacobi{nx}_model_{datatype}_{nt}.mlpackage", compute_units=ct.ComputeUnit.ALL)
-
-# Simulating
-input_dict = {'X': u, 'Mask1': masks[0], 'Mask2': masks[1], 'Mask3': masks[2], 'Mask4': masks[3], 'Mask5': masks[4], 'Mask6': masks[5], 'Mask7': masks[6], 'Mask8': masks[7], 'Mask9': masks[8],
-    'Mask10': masks[9]}
-result = mlmodel.predict(input_dict)
-
-for snap in result:
+'''
+# Visualize
+for snap in jacobiModel.snaps:
     plt.imshow(snap.squeeze().cpu().numpy(), cmap='jet', vmin=0, vmax=100)
     plt.colorbar()
     plt.pause(0.1)
     plt.clf()
+'''
+    
+# Convertir los snapshots a imágenes del mismo tamaño
+target_shape = jacobiModel.snaps[0].shape[-2:]  # (H, W)
+colormapped_frames = []
+
+for snap in jacobiModel.snaps:
+    # Asegurarse de que tiene 4 dimensiones (N, C, H, W)
+    if snap.dim() == 2:
+        snap = snap.unsqueeze(0).unsqueeze(0)
+    elif snap.dim() == 3:
+        snap = snap.unsqueeze(0)
+    
+    # Resize al tamaño objetivo
+    snap_resized = F.interpolate(snap, size=target_shape, mode='bilinear', align_corners=False)
+
+    # Convertir a NumPy
+    snap_np = snap_resized.squeeze().detach().cpu().numpy()
+    
+    # Normalizar y aplicar colormap
+    norm_frame = snap_np / 100.0
+    color_frame = cm.jet(norm_frame)[:, :, :3]  # RGBA → RGB
+    color_frame = (color_frame * 255).astype(np.uint8)
+    
+    colormapped_frames.append(color_frame)
+
+# Guardar como GIF
+imageio.mimsave("multigrid_evolution.gif", colormapped_frames, fps=5)
+print("GIF guardado como multigrid_evolution.gif")
     

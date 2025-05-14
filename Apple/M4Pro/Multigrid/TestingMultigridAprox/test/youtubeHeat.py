@@ -1,23 +1,21 @@
 # https://github.com/Younes-Toumi/Youtube-Channel/blob/main/Simulation%20with%20Python/Heat%20Equation/heatEquation2D.py
 import numpy as np
 import matplotlib.pyplot as plt
-
+from matplotlib import cm
+import imageio
 
 # Defining our problem
 
 a = 110
 length = 50 #mm
-time = 4 #seconds
-nodes = 40
+nodes = 1024
 
 # Initialization 
 
-dx = length / (nodes-1)
-dy = length / (nodes-1)
+dx = nodes
+dy = nodes
 
 dt = min(   dx**2 / (4 * a),     dy**2 / (4 * a))
-
-t_nodes = int(time/dt) + 1
 
 u = np.zeros((nodes, nodes)) + 20 # Plate is initially as 20 degres C
 
@@ -40,7 +38,9 @@ plt.colorbar(pcm, ax=axis)
 
 counter = 0
 
-while counter < time :
+snapshots = []
+
+while counter < 1000 :
 
     w = u.copy()
 
@@ -52,15 +52,20 @@ while counter < time :
 
             u[i, j] = dt * a * (dd_ux + dd_uy) + w[i, j]
 
-    counter += dt
+    counter += 1
+    snapshots.append(u.copy())
 
-    print("t: {:.3f} [s], Average temperature: {:.2f} Celcius".format(counter, np.average(u)))
+    #print("t: {:.3f} [iters], Average temperature: {:.2f} Celcius".format(counter, np.average(u)))
 
-    # Updating the plot
+colormapped_frames = []
+for snap in snapshots:
+    # Normalizar y aplicar colormap
+    norm_frame = snap / 100.0
+    color_frame = cm.jet(norm_frame)[:, :, :3]  # RGBA → RGB
+    color_frame = (color_frame * 255).astype(np.uint8)
+    
+    colormapped_frames.append(color_frame)
 
-    pcm.set_array(u)
-    axis.set_title("Distribution at t: {:.3f} [s].".format(counter))
-    plt.pause(0.01)
-
-
-plt.show()
+# Guardar como GIF
+imageio.mimsave("normal_evolution.gif", colormapped_frames, fps=5)
+print("GIF guardado como normal_evolution.gif")
