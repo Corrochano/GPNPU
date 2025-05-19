@@ -221,4 +221,11 @@ for snap in jacobiModel.snaps:
 # Guardar como GIF
 imageio.mimsave("multigrid_evolution.gif", colormapped_frames, fps=5)
 print("GIF guardado como multigrid_evolution.gif")
+
+first_img = jacobiModel.snaps[0].squeeze().detach().cpu().numpy()
+last_img = jacobiModel.snaps[-1].squeeze().detach().cpu().numpy()
+
+# Guardar como PNG con colormap
+plt.imsave('multigrid_first.png', first_img, cmap='jet', vmin=0, vmax=100)
+plt.imsave('multigrid_last.png', last_img, cmap='jet', vmin=0, vmax=100)
     

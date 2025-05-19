@@ -69,3 +69,9 @@ for snap in snapshots:
 # Guardar como GIF
 imageio.mimsave("normal_evolution.gif", colormapped_frames, fps=5)
 print("GIF guardado como normal_evolution.gif")
+
+# Guardar como PNG con colormap
+plt.imsave('yt_first.png', colormapped_frames[0], cmap='jet', vmin=0, vmax=100)
+plt.imsave('yt_last.png', colormapped_frames[-1], cmap='jet', vmin=0, vmax=100)
+
+
