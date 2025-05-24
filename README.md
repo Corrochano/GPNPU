@@ -23,14 +23,6 @@ Additionally, this work serves as my **Master's Final Project** for the **Master
   * [Convert to MLCore](#convert-to-mlcore)
   * [Use MLCore](#use-mlcore)  
   * [Python Dependencies](#python-dependencies)  
-  * [M1](#m1)  
-    + [Matrix Multiplication](#matrix-multiplication-1)  
-    + [Jacobi](#jacobi-1)  
-    + [Multigrid Jacobi](#multigrid-jacobi-1)
-- [Intel NUC](#intel-nuc)  
-  * [Matrix Multiplication](#matrix-multiplication-2)  
-  * [Jacobi](#jacobi-2)  
-  * [Multigrid Jacobi](#multigrid-jacobi-2)  
 - [License](#license)
     * [Copyright Notice](#copyright-notice)
 
@@ -202,19 +194,6 @@ I used Python 3.9.6 with the next dependencies:
 - torch==2.3.0 
 - coremltools==8.0b2 
 - torchvision==0.18.0
-
-### M1
-All the MLCore models was training on a Mac Mini M1, where all the metrics (time of execution, GFLOPs/s and mean power consumption, that means all the taken mW and calculate the average) was also taken, as they can be on all the devices that I used. </br>
-On the next sections, I will show that results for each algorthm.
-
-### Matrix Multiplication
-TODO
-
-### Jacobi
-TODO
-
-### Multigrid Jacobi
-TODO
 
 ## License
 This project is licensed under the Apache License, Version 2.0 (the "License"). You may not use this file except in compliance with the License. You may obtain a copy of the License at
