@@ -1,7 +1,7 @@
 # GPNPU  
 This repository contains my work with various **neural accelerators** to **evaluate** their performance on **general-purpose algorithms**, such as matrix multiplication and Jacobi methods.  
 
-The project primarily focuses on Apple's ANE and Intel NPUs, utilizing an Apple M1, Apple M4 Pro, and an Intel NUC.  
+The project primarily focuses on Apple's ANE, utilizing an Apple M1 and Apple M4 Pro.  
 
 Additionally, this work serves as my **Master's Final Project** for the **Master’s in Computer Engineering at Complutense University of Madrid**. 
 
