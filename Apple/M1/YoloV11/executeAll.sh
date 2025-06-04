@@ -15,12 +15,13 @@
 #limitations under the License.
 
 # Use example: sudo ./startJacobiTest.sh metrics.txt 1 100 1 fp32 ane
-if [ $# -lt 1 ]; then
-    echo "Usage: $0 <param1>"
+if [ $# -lt 2 ]; then
+    echo "Usage: $0 <param1> <param2>"
     exit 1
 fi
 
 number_exec=$1
+model=$2
 
 echo " ***************************"
 echo " *** Running FP16 Version***"
@@ -32,9 +33,9 @@ echo "powermetrics"
 sudo rm -f cpu_16.txt
 sudo powermetrics -i 100 --samplers cpu_power -a --hide-cpu-duty-cycle --show-usage-summary --show-extra-power-info --show-process-energy > cpu_16.txt &
 
-echo " Running the matmul model..."
+echo " Running the yolo model..."
 # Test to launch (exec)
-/Users/acorrochano/bin/pyenv/bin/python3 runYolo11.py $number_exec cpu yolo11xFP16.mlpackage
+/Users/acorrochano/bin/pyenv/bin/python3 runYolo11.py $number_exec cpu $model
 
 echo " Model done to run!"
 sudo pkill -9 powermetrics
@@ -48,9 +49,9 @@ echo "powermetrics"
 sudo rm -f cpu_16.txt
 sudo powermetrics -i 100 --samplers cpu_power -a --hide-cpu-duty-cycle --show-usage-summary --show-extra-power-info --show-process-energy > gpu_16.txt &
 
-echo " Running the matmul model..."
+echo " Running the yolo model..."
 # Test to launch (exec)
-/Users/acorrochano/bin/pyenv/bin/python3 runYolo11.py $number_exec gpu yolo11xFP16.mlpackage
+/Users/acorrochano/bin/pyenv/bin/python3 runYolo11.py $number_exec gpu $model
 
 echo " Model done to run!"
 sudo pkill -9 powermetrics
@@ -64,9 +65,9 @@ echo "powermetrics"
 sudo rm -f cpu_16.txt
 sudo powermetrics -i 100 --samplers cpu_power -a --hide-cpu-duty-cycle --show-usage-summary --show-extra-power-info --show-process-energy > ane_16.txt &
 
-echo " Running the matmul model..."
+echo " Running the yolo model..."
 # Test to launch (exec)
-/Users/acorrochano/bin/pyenv/bin/python3 runYolo11.py $number_exec ane yolo11xFP16.mlpackage
+/Users/acorrochano/bin/pyenv/bin/python3 runYolo11.py $number_exec ane $model
 
 echo " Model done to run!"
 sudo pkill -9 powermetrics
@@ -84,9 +85,9 @@ echo "powermetrics"
 sudo rm -f cpu_32.txt
 sudo powermetrics -i 100 --samplers cpu_power -a --hide-cpu-duty-cycle --show-usage-summary --show-extra-power-info --show-process-energy > cpu_32.txt &
 
-echo " Running the matmul model..."
+echo " Running the yolo model..."
 # Test to launch (exec)
-/Users/acorrochano/bin/pyenv/bin/python3 runYolo11.py $number_exec cpu yolo11xFP32.mlpackage
+/Users/acorrochano/bin/pyenv/bin/python3 runYolo11.py $number_exec cpu $model
 
 echo " Model done to run!"
 sudo pkill -9 powermetrics
@@ -100,9 +101,9 @@ echo "powermetrics"
 sudo rm -f cpu_32.txt
 sudo powermetrics -i 100 --samplers cpu_power -a --hide-cpu-duty-cycle --show-usage-summary --show-extra-power-info --show-process-energy > gpu_32.txt &
 
-echo " Running the matmul model..."
+echo " Running the yolo model..."
 # Test to launch (exec)
-/Users/acorrochano/bin/pyenv/bin/python3 runYolo11.py $number_exec gpu yolo11xFP32.mlpackage
+/Users/acorrochano/bin/pyenv/bin/python3 runYolo11.py $number_exec gpu $model
 
 echo " Model done to run!"
 sudo pkill -9 powermetrics
@@ -116,9 +117,9 @@ echo "powermetrics"
 sudo rm -f cpu_32.txt
 sudo powermetrics -i 100 --samplers cpu_power -a --hide-cpu-duty-cycle --show-usage-summary --show-extra-power-info --show-process-energy > ane_32.txt &
 
-echo " Running the matmul model..."
+echo " Running the yolo model..."
 # Test to launch (exec)
-/Users/acorrochano/bin/pyenv/bin/python3 runYolo11.py $number_exec ane yolo11xFP32.mlpackage
+/Users/acorrochano/bin/pyenv/bin/python3 runYolo11.py $number_exec ane $model
 
 echo " Model done to run!"
 sudo pkill -9 powermetrics

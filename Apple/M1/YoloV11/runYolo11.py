@@ -70,7 +70,7 @@ def main(runtimes, device, model_filename):
 
 if __name__ == "__main__":
     # Create the parser
-    parser = argparse.ArgumentParser(description="python runYolo11.py number_times_executed device model.")
+    parser = argparse.ArgumentParser(description="python runYolo11.py number_times_executed iters device model.")
 
     # Add arguments
     parser.add_argument("int_input", type=int, help="number of times executed")

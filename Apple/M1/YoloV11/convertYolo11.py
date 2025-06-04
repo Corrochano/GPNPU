@@ -13,37 +13,56 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-
+import argparse
 import coremltools as ct
 import torch
 from ultralytics import YOLO
 
-# Load the model
-source_model = YOLO('yolo11x.pt')
+def main(model):
+    name = model.split('.')[0]
+    # Load the model
+    source_model = YOLO(model) #'yolo11x.pt')
 
-source_model.export(format="torchscript", task="detect")  # creates 'yolo11n.torchscript'
+    source_model.export(format="torchscript", task="detect")  # creates 'yolo11n.torchscript'
 
-# Load the exported TorchScript model
-torchscript_model = torch.jit.load("yolo11x.torchscript")
+    # Load the exported TorchScript model
+    torchscript_model = torch.jit.load("yolo11x.torchscript")
 
-# Convert to CoreML
-dummy_input = torch.rand(1, 3, 640, 640)
+    # Convert to CoreML
+    dummy_input = torch.rand(1, 3, 640, 640)
 
-fp16model = ct.convert(torchscript_model, 
-                   convert_to="mlprogram",
-                   inputs=[ct.TensorType(shape=dummy_input.shape)],
-                   source="pytorch", 
-                   compute_precision=ct.precision.FLOAT16)
-                   
-fp32model = ct.convert(torchscript_model, 
-                   convert_to="mlprogram",
-                   inputs=[ct.TensorType(shape=dummy_input.shape)],
-                   source="pytorch", 
-                   compute_precision=ct.precision.FLOAT32)
-                   
-# Save the models                   
-fp16model.save("yolo11xFP16.mlpackage")
+    fp16model = ct.convert(torchscript_model, 
+                       convert_to="mlprogram",
+                       inputs=[ct.TensorType(shape=dummy_input.shape)],
+                       source="pytorch", 
+                       compute_precision=ct.precision.FLOAT16)
+                       
+    fp32model = ct.convert(torchscript_model, 
+                       convert_to="mlprogram",
+                       inputs=[ct.TensorType(shape=dummy_input.shape)],
+                       source="pytorch", 
+                       compute_precision=ct.precision.FLOAT32)
+                       
+    # Save the models                   
+    fp16model.save(f"{name}FP16.mlpackage")
 
-fp32model.save("yolo11xFP32.mlpackage")
+    fp32model.save(f"{name}FP32.mlpackage")
 
+if __name__ == "__main__":
+    # Create the parser
+    parser = argparse.ArgumentParser(description="python convertYolo11.py model_name")
+    
+    # Add arguments
+    parser.add_argument("model_name", type=str, help="the name of the model to convert")
+    
+    # Parse the arguments
+    args = parser.parse_args()
+
+    # Check if the arguments are correct (not necessary here as argparse will handle type checks)
+    if args.model_name is None :
+        print("Error: You must provide all the arguments.")
+        parser.print_usage()  # Shows the usage message
+    else:
+        # Call the main function with provided arguments
+        main(args.model_name)    
 
