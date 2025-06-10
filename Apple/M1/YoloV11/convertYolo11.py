@@ -26,7 +26,7 @@ def main(model):
     source_model.export(format="torchscript", task="detect")  # creates 'yolo11n.torchscript'
 
     # Load the exported TorchScript model
-    torchscript_model = torch.jit.load("yolo11x.torchscript")
+    torchscript_model = torch.jit.load(model)
 
     # Convert to CoreML
     dummy_input = torch.rand(1, 3, 640, 640)
