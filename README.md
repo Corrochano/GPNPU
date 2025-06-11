@@ -135,7 +135,7 @@ I needed to test almost all that questions on my just to be sure of the correct 
 To check if the ANE is on usage, on the first place I used [Asitop](https://github.com/tlkh/asitop) to see the usage on  live time:
 ![Captura desde 2025-02-25 11-09-41](https://github.com/user-attachments/assets/178ce7c2-162e-4491-9cd0-d646d32ec775)
 
-But to take metrics I used tegrastats with this command:
+But to take metrics I used powermetrics with this command:
 
 ```shell
 sudo powermetrics -i 100 --samplers cpu_power -a --hide-cpu-duty-cycle --show-usage-summary --show-extra-power-info --show-process-energy 
