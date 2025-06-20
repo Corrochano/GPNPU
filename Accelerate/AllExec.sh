@@ -1,0 +1,19 @@
+VECLIB_MAXIMUM_THREADS=1 ./execute_accelerate 256  
+VECLIB_MAXIMUM_THREADS=1 ./execute_accelerate 512  
+VECLIB_MAXIMUM_THREADS=1 ./execute_accelerate 1024
+VECLIB_MAXIMUM_THREADS=1 ./execute_accelerate 2048
+VECLIB_MAXIMUM_THREADS=1 ./execute_accelerate 4096
+VECLIB_MAXIMUM_THREADS=1 ./execute_accelerate 8192  
+VECLIB_MAXIMUM_THREADS=1 ./execute_accelerate 12288
+VECLIB_MAXIMUM_THREADS=1 ./execute_accelerate 14336
+VECLIB_MAXIMUM_THREADS=1 ./execute_accelerate 16384
+
+VECLIB_MAXIMUM_THREADS=2 ./execute_accelerate 256  
+VECLIB_MAXIMUM_THREADS=2 ./execute_accelerate 512  
+VECLIB_MAXIMUM_THREADS=2 ./execute_accelerate 1024
+VECLIB_MAXIMUM_THREADS=2 ./execute_accelerate 2048
+VECLIB_MAXIMUM_THREADS=2 ./execute_accelerate 4096
+VECLIB_MAXIMUM_THREADS=2 ./execute_accelerate 8192  
+VECLIB_MAXIMUM_THREADS=2 ./execute_accelerate 12288
+VECLIB_MAXIMUM_THREADS=2 ./execute_accelerate 14336
+VECLIB_MAXIMUM_THREADS=2 ./execute_accelerate 16384
